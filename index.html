@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'">
+  <title>Sketchroom — a little room for big ideas</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="theme.css">
+  <script type="module" src="app.mjs"></script>
+</head>
+<body>
+<div class="app-frame">
+  <header class="topbar">
+    <a class="brand" href="#" aria-label="Sketchroom home"><span class="brand-mark">SK<br>RM</span><span>SKETCHROOM<small>A LITTLE ROOM FOR BIG IDEAS</small></span></a>
+    <div class="project-heading"><input id="project-name" aria-label="Project name" maxlength="300"><span id="save-state">Unsaved project</span></div>
+    <nav aria-label="Project actions"><button id="new-project">New</button><button id="open-project">Open</button><button id="save-project">↓ Save project</button><button class="primary" id="export">Export PNG ↗</button></nav>
+  </header>
+  <main class="editor">
+    <aside class="library-panel">
+      <div class="sidebar-heading"><span class="eyebrow">01 / YOUR SKETCHBOOK</span><span class="tiny-stamp">LOCAL & OFFLINE</span></div>
+      <div class="section-title"><h2>Pages</h2><button id="add-page" title="Add page" aria-label="Add page">+</button></div>
+      <div id="page-list" class="page-list"></div>
+      <div class="divider"></div>
+      <span class="eyebrow">02 / BUILDING BLOCKS</span><h2 class="library-title">Less blank-page<br>energy.</h2><p class="muted">Pick a piece. Make it your own.</p>
+      <div id="components" class="components"></div>
+      <button id="import-image" class="import-image">＋ Add an image</button><p class="muted image-import-hint">or paste with Ctrl+V / drop onto canvas</p>
+      <div class="sidebar-bottom"><span class="scribble">↝</span><p>Rough ideas.<br>Real possibilities.</p><button id="help">Keyboard shortcuts ?</button></div>
+    </aside>
+    <section class="workspace" aria-label="Drawing workspace">
+      <div class="workspace-top"><span id="page-caption"></span><div><button id="undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button><button id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo">↷</button><label class="toggle"><input type="checkbox" id="snap" checked> Snap</label><label class="toggle"><input type="checkbox" id="guides" checked> Guides</label></div></div>
+      <div class="tools" id="tools" role="toolbar" aria-label="Drawing tools"></div>
+      <div id="stage" tabindex="0" aria-label="Canvas. Select tools above; edit selected objects in the inspector."><svg id="canvas" xmlns="http://www.w3.org/2000/svg" aria-label="Page artwork"></svg></div>
+      <div class="workspace-bottom"><span id="hint">A few lines can be the start of something.</span><div class="zoom"><button id="zoom-out" aria-label="Zoom out">−</button><button id="fit">Fit</button><span id="zoom-value">100%</span><button id="zoom-in" aria-label="Zoom in">+</button></div></div>
+    </section>
+    <aside class="inspector"><div class="sidebar-heading"><span class="eyebrow">03 / THE DETAILS</span></div><div id="inspector-content"></div><div class="divider"></div><div class="section-title"><h2>Layers</h2><span id="layer-count" class="muted"></span></div><div id="layers"></div></aside>
+  </main>
+  <footer class="footer"><span><i></i> OFFLINE BY DESIGN</span><span>Draw it out. Pass it on. <button id="credits">Credits</button></span><span id="object-count">0 objects</span></footer>
+</div>
+<input type="file" id="file-input" accept=".sketchroom,.json" hidden>
+<input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
+<dialog id="page-dialog"><form method="dialog"><span class="eyebrow">A FRESH PAGE</span><h2>Room for another idea.</h2><label>Page name<input id="new-page-name" value="Untitled screen" maxlength="300" required></label><label>Canvas preset<select id="page-preset"><option value="1200,800">Desktop · 1200 × 800</option><option value="390,844">Phone · 390 × 844</option><option value="768,1024">Tablet · 768 × 1024</option><option value="custom">Custom size</option></select></label><div class="field-pair"><label>Width<input id="new-page-width" type="number" min="100" max="8000" value="1200" required></label><label>Height<input id="new-page-height" type="number" min="100" max="8000" value="800" required></label></div><div class="dialog-actions"><button value="cancel" formnovalidate>Cancel</button><button value="create" class="primary">Create page ↗</button></div></form></dialog>
+<dialog id="export-dialog"><form method="dialog"><span class="eyebrow">READY TO PASS IT ON?</span><h2>From sketch to possibility.</h2><p>Export the current page as a PNG for your next design conversation.</p><label>Resolution<select id="export-scale"><option value="1">1× · original size</option><option value="2">2× · extra detail</option></select></label><label class="check-row"><input id="export-annotations" type="checkbox" checked> Include notes and annotation arrows</label><div class="dialog-actions"><button value="cancel">Cancel</button><button value="export" class="primary">Download PNG ↗</button></div></form></dialog>
+<dialog id="help-dialog"><form method="dialog"><span class="eyebrow">A FEW HANDY SHORTCUTS</span><h2>Keep your ideas moving.</h2><dl><dt>V / H / R / O / P / T / N / A / L</dt><dd>Select / Hand / Rectangle / Ellipse / Pen / Text / Note / Arrow / Line. Drawing tools stay active.</dd><dt>Space + drag / Ctrl + wheel</dt><dd>Pan / zoom around cursor</dd><dt>Shift or Ctrl + click / drag blank space</dt><dd>Toggle objects in selection / select an area</dd><dt>Alt + click</dt><dd>Select one part inside a group</dd><dt>Ctrl + C / Ctrl + V / Ctrl + D</dt><dd>Copy / paste / duplicate selection</dd><dt>Ctrl + Z / Ctrl + Shift + Z</dt><dd>Undo / redo</dd><dt>Ctrl + G / Ctrl + Shift + G</dt><dd>Group / ungroup</dd><dt>Ctrl + S / Ctrl + O / Ctrl + A</dt><dd>Save project / open project / select all</dd><dt>Arrow keys / Shift + arrows / Delete</dt><dd>Move 1px / move 10px / delete selection</dd><dt>Double-click a shape or text with Select active</dt><dd>Edit directly on canvas. Enter adds a line; Ctrl+Enter or click outside finishes. Escape cancels the text edit.</dd></dl><p>Edit component labels in the inspector or double-click them. Pick individual group parts in the inspector without ungrouping.</p><button class="primary">Got it</button></form></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

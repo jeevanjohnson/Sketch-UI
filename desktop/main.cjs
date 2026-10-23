@@ -1,0 +1,77 @@
+const { app, BrowserWindow, dialog, ipcMain, clipboard, nativeImage, ClipboardItem } = require('electron');
+const path = require('node:path');
+const { Worker } = require('node:worker_threads');
+const fs = require('node:fs/promises');
+
+let mainWindow;
+let dirty = false;
+let backgroundJob = null;
+app.whenReady().then(() => {
+  mainWindow = new BrowserWindow({
+    width: 1480, height: 940, minWidth: 1100, minHeight: 720,
+    backgroundColor: '#192c58', autoHideMenuBar: true,
+    webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true }
+  });
+  mainWindow.loadFile(path.join(__dirname, '..', 'index.html'));
+  mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  mainWindow.webContents.on('will-navigate', event => event.preventDefault());
+  mainWindow.webContents.session.on('will-download', (event, item) => {
+    const filename = item.getFilename();
+    item.once('done', (event, state) => {
+      if (!mainWindow.isDestroyed()) mainWindow.webContents.send('download-result', { filename, state });
+    });
+  });
+  mainWindow.on('close', event => {
+    if (!dirty) return;
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: 'warning', title: 'Unsaved sketch', message: 'Close without saving your project?',
+      detail: 'Download your project file before closing to keep your changes.',
+      buttons: ['Keep editing', 'Close without saving'], defaultId: 0, cancelId: 0
+    });
+    if (choice === 0) event.preventDefault();
+  });
+});
+ipcMain.on('dirty-state', (event, value) => {
+  if (event.sender === mainWindow?.webContents) dirty = Boolean(value);
+});
+function validSender(event) { return event.sender === mainWindow?.webContents; }
+ipcMain.handle('read-credits', async event => {
+  if (!validSender(event)) throw new Error('Unavailable.');
+  const license = path.join(path.dirname(require.resolve('@imgly/background-removal-node')), '..', 'LICENSE.md');
+  const [notices, text] = await Promise.all([fs.readFile(path.join(__dirname, '..', 'THIRD_PARTY_NOTICES.md'), 'utf8'), fs.readFile(license, 'utf8')]);
+  return `${notices}\n\n${text}`;
+});
+ipcMain.handle('copy-image', async (event, source, text) => {
+  if (!validSender(event) || typeof source !== 'string' || source.length > 32000000 || !source.startsWith('data:image/png;base64,')) throw new Error('Invalid image.');
+  const image = nativeImage.createFromDataURL(source);
+  if (image.isEmpty()) throw new Error('The image is empty.');
+  const payload = { 'image/png': new Blob([image.toPNG()], { type: 'image/png' }) };
+  if (typeof text === 'string' && text.startsWith('SKETCHROOM_OBJECTS\n') && text.length < 32000000) payload['text/plain'] = text;
+  await clipboard.write([new ClipboardItem(payload)]); return true;
+});
+ipcMain.handle('remove-image-background', (event, source) => {
+  if (!validSender(event) || typeof source !== 'string' || source.length > 32000000 || !source.startsWith('data:image/png;base64,')) throw new Error('Invalid image.');
+  if (backgroundJob) throw new Error('Another cutout is already running.');
+  const dimensions = nativeImage.createFromDataURL(source).getSize();
+  if (!dimensions.width || dimensions.width > 4096 || dimensions.height > 4096 || dimensions.width * dimensions.height > 12000000) throw new Error('Use an image up to 4096 pixels and 12 megapixels.');
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(path.join(__dirname, 'background-worker.cjs'), { workerData: { source } });
+    backgroundJob = worker;
+    let settled = false;
+    const finish = (error, result) => {
+      if (settled) return; settled = true; backgroundJob = null;
+      clearTimeout(timer); worker.terminate(); error ? reject(new Error(error)) : resolve(result);
+    };
+    const timer = setTimeout(() => finish('The cutout timed out. Try a smaller image.'), 180000);
+    worker.on('message', message => {
+      if (message.progress && !mainWindow.isDestroyed()) event.sender.send('background-progress', message.progress);
+      if (message.source) finish(null, message.source);
+      if (message.error) finish(message.error);
+    });
+    worker.on('error', error => finish(error.message));
+    worker.on('exit', () => { if (!settled) finish('Cutout canceled.'); });
+  });
+});
+ipcMain.handle('cancel-image-background', event => { if (validSender(event)) backgroundJob?.terminate(); });
+app.on('before-quit', () => backgroundJob?.terminate());
+app.on('window-all-closed', () => app.quit());
