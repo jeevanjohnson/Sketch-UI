@@ -8,9 +8,11 @@
     "start": "electron .",
     "preview": "node src/tools/serve.cjs",
     "test": "node --test src/tests/*.test.mjs",
-    "check": "node --check src/app.mjs && node --check src/model.mjs && node --check src/image-editor.mjs && node --check src/image-processing.mjs && node --check src/image-worker.mjs && node --check src/desktop/main.cjs && node --check src/desktop/preload.cjs && node --check src/desktop/background-worker.cjs",
+    "check": "node --check src/app.mjs && node --check src/model.mjs && node --check src/image-editor.mjs && node --check src/image-processing.mjs && node --check src/image-worker.mjs && node --check src/desktop/main.cjs && node --check src/desktop/preload.cjs && node --check src/desktop/background-worker.cjs && node --check src/object-renderer.mjs && node --check src/text-layout.mjs",
     "dist": "electron-builder --win nsis --x64",
-    "icons": "node src/tools/build-icon.cjs"
+    "icons": "node src/tools/build-icon.cjs",
+    "format": "npm exec --yes --package=prettier@3.6.2 -- prettier --write \"src/**/*.{mjs,cjs,css,html}\" architecture/index.html package.json",
+    "format:check": "npm exec --yes --package=prettier@3.6.2 -- prettier --check \"src/**/*.{mjs,cjs,css,html}\" architecture/index.html package.json"
   },
   "build": {
     "appId": "local.sketchui.app",
@@ -65,5 +67,10 @@
     "type": "git",
     "url": "https://github.com/jeevanjohnson/Sketch-UI.git"
   },
-  "productName": "SketchUI"
+  "productName": "SketchUI",
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true,
+    "trailingComma": "none"
+  }
 }

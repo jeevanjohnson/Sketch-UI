@@ -10,3 +10,9 @@
 
 - `node src/tools/verify-package.cjs`: compares packaged runtime/assets/notices/LICENSE and manifest identity/dependencies with source, excludes development files; passed for 1.3.0.
 - `node src/tools/compare-readme.cjs before.md after.md comparison.md`: writes a line-based Markdown comparison (strikeout removals, bold additions). Uses Node only; intended for small README-sized inputs; generated release comparison inspected.
+
+## Source formatting
+
+`npm run format` formats runtime source, tests, tools, CSS/HTML, the architecture page and package.json. `npm run format:check` checks the same paths without writing. Both use temporary, pinned Prettier 3.6.2 through npm exec; first use may require npm registry access, later runs can use its cache. No application or development dependency is added to the lockfile. Settings live in package.json: 100-column target, single quotes and no trailing commas.
+
+After formatting, manually inspect logical grouping and function placement. Prettier cannot decide responsibility boundaries or replace nested conditions with clear control flow. Embedded HTML templates are marked with HTML comments so their markup is formatted too; fixed SVG path literals remain intact. Full-source formatting and desktop/save/image/preview/explorer regressions passed on 2026-10-24.

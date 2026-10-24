@@ -10,28 +10,58 @@ const path = require('node:path');
   const packaged = process.argv.includes('--packaged');
   const app = await electron.launch({
     args: packaged ? [] : [root],
-    executablePath: packaged ? path.join(root, 'releases', 'win-unpacked', 'SketchUI.exe') : require('electron')
+    executablePath: packaged
+      ? path.join(root, 'releases', 'win-unpacked', 'SketchUI.exe')
+      : require('electron')
   });
   try {
     const page = await app.firstWindow();
     page.setDefaultTimeout(10000);
-    const prepareDownload = async savePath => {
+    const prepareDownload = async (savePath) => {
       await app.evaluate(({ BrowserWindow }, destination) => {
         globalThis.downloadResult = new Promise((resolve, reject) => {
           const timer = setTimeout(() => reject(new Error('Native download timed out')), 10000);
-          BrowserWindow.getAllWindows()[0].webContents.session.once('will-download', (event, item) => {
-            item.setSavePath(destination);
-            item.once('done', (event, state) => { clearTimeout(timer); resolve({ state, path: item.getSavePath() }); });
-          });
+          BrowserWindow.getAllWindows()[0].webContents.session.once(
+            'will-download',
+            (event, item) => {
+              item.setSavePath(destination);
+              item.once('done', (event, state) => {
+                clearTimeout(timer);
+                resolve({ state, path: item.getSavePath() });
+              });
+            }
+          );
         });
         globalThis.downloadResult.catch(() => {});
       }, savePath);
     };
     const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
+    page.on('pageerror', (error) => errors.push(error.message));
     await page.waitForSelector('[data-id]');
     await page.screenshot({ path: path.join(artifacts, 'editor-desktop.png') });
     const initial = await page.locator('#layers .layer').count();
+    // A substantial up-left stroke must retain its signed dimensions on release.
+    await page.locator('[data-tool="arrow"]').click();
+    const arrowPoints = await page.locator('#canvas > g').evaluate((group) => {
+      const matrix = group.getScreenCTM();
+      return [new DOMPoint(700, 550), new DOMPoint(550, 400)].map((point) => {
+        const screen = point.matrixTransform(matrix);
+        return { x: screen.x, y: screen.y };
+      });
+    });
+    await page.mouse.move(arrowPoints[0].x, arrowPoints[0].y);
+    await page.mouse.down();
+    await page.mouse.move(arrowPoints[1].x, arrowPoints[1].y, { steps: 5 });
+    await page.mouse.up();
+    const arrowPath = await page
+      .locator('#canvas [data-id]')
+      .last()
+      .locator('path')
+      .first()
+      .getAttribute('d');
+    assert.equal(arrowPath, 'M 700 550 L 550 400');
+    await page.locator('#undo').click();
+    await page.locator('[data-tool="select"]').click();
     await page.locator('[data-component="card"]').click();
     assert.equal(await page.locator('#layers .layer').count(), initial + 3);
     await page.locator('#undo').click();
@@ -47,7 +77,9 @@ const path = require('node:path');
     const stage = await page.locator('#stage').boundingBox();
     await page.mouse.move(stage.x + stage.width / 2, stage.y + stage.height / 2);
     await page.mouse.down();
-    await page.mouse.move(stage.x + stage.width / 2 + 80, stage.y + stage.height / 2 + 60, { steps: 5 });
+    await page.mouse.move(stage.x + stage.width / 2 + 80, stage.y + stage.height / 2 + 60, {
+      steps: 5
+    });
     await page.mouse.up();
     assert.equal(await page.locator('#layers .layer').count(), initial + 4);
     await page.locator('#add-page').click();
@@ -82,18 +114,34 @@ const path = require('node:path');
     assert.equal(bytes.readUInt32BE(16), 390);
     assert.equal(bytes.readUInt32BE(20), 844);
     const projectPath = path.join(artifacts, 'roundtrip.sketchui');
-    await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); }, projectPath);
+    await app.evaluate(({ dialog }, destination) => {
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+    }, projectPath);
     await page.locator('#save-project').click();
-    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
+    await page.waitForFunction(() =>
+      document.querySelector('#save-state').textContent.startsWith('✓')
+    );
     const document = JSON.parse(await fs.readFile(projectPath, 'utf8'));
     assert.equal(document.pages.length, 2);
-    assert.ok(document.pages[0].objects.some(o => o.text === 'Edited card detail'));
+    assert.ok(document.pages[0].objects.some((o) => o.text === 'Edited card detail'));
     await page.locator('#file-input').setInputFiles(projectPath);
-    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
+    await page.waitForFunction(() =>
+      document.querySelector('#save-state').textContent.startsWith('✓')
+    );
     assert.equal(await page.locator('.page-item').count(), 2);
-    await page.locator('#file-input').setInputFiles({ name: 'invalid.sketchui', mimeType: 'application/json', buffer: Buffer.from('{"format":"wrong"}') });
-    await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Could not open'));
-    assert.equal(await page.locator('.page-item').count(), 2, 'Invalid file leaves current project intact');
+    await page.locator('#file-input').setInputFiles({
+      name: 'invalid.sketchui',
+      mimeType: 'application/json',
+      buffer: Buffer.from('{"format":"wrong"}')
+    });
+    await page.waitForFunction(() =>
+      document.querySelector('#toast').textContent.includes('Could not open')
+    );
+    assert.equal(
+      await page.locator('.page-item').count(),
+      2,
+      'Invalid file leaves current project intact'
+    );
     await page.locator('.page-item').first().click();
     await page.locator('#export').click();
     await page.locator('#export-annotations').uncheck();
@@ -113,10 +161,26 @@ const path = require('node:path');
     const featurePage = model.newPage('Text and selection', 1000, 700);
     const rectangle = model.shape('rect', 100, 160, 260, 150, { fill: '#eee4cf' });
     const circle = model.shape('ellipse', 500, 160, 230, 170, { fill: '#eee4cf' });
-    const textbox = model.shape('text', 100, 400, 200, 40, { text: 'Original text', fill: '#252722' });
+    const textbox = model.shape('text', 100, 400, 200, 40, {
+      text: 'Original text',
+      fill: '#252722'
+    });
     featurePage.objects = [rectangle, circle, textbox];
-    await page.locator('#file-input').setInputFiles({ name: 'features.sketchui', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'sketchroom', version: 1, name: 'Feature checks', pages: [featurePage] })) });
-    await page.waitForFunction(() => document.querySelector('#project-name').value === 'Feature checks');
+    await page.locator('#file-input').setInputFiles({
+      name: 'features.sketchui',
+      mimeType: 'application/json',
+      buffer: Buffer.from(
+        JSON.stringify({
+          format: 'sketchroom',
+          version: 1,
+          name: 'Feature checks',
+          pages: [featurePage]
+        })
+      )
+    });
+    await page.waitForFunction(
+      () => document.querySelector('#project-name').value === 'Feature checks'
+    );
     await page.locator('[data-tool="select"]').click();
     await page.locator(`[data-id="${rectangle.id}"]`).dblclick();
     await page.locator('#inline-text-editor').fill('Text inside a rectangle');
@@ -126,18 +190,25 @@ const path = require('node:path');
     await page.locator('[data-prop="align"]').selectOption('center');
     await page.locator('[data-prop="padding"]').fill('24');
     await page.locator('[data-prop="padding"]').press('Tab');
-    assert.equal(await page.locator(`[data-id="${rectangle.id}"] text`).getAttribute('text-anchor'), 'middle');
+    assert.equal(
+      await page.locator(`[data-id="${rectangle.id}"] text`).getAttribute('text-anchor'),
+      'middle'
+    );
     await page.locator(`[data-id="${circle.id}"]`).dblclick();
     await page.locator('#inline-text-editor').fill('Circle label');
     await page.locator('#inline-text-editor').press('Control+Enter');
     await page.locator(`[data-id="${textbox.id}"]`).dblclick();
-    await page.locator('#inline-text-editor').fill('This is a much longer sentence that wraps automatically inside the text box.');
+    await page
+      .locator('#inline-text-editor')
+      .fill('This is a much longer sentence that wraps automatically inside the text box.');
     await page.locator('#inline-text-editor').press('Control+Enter');
-    assert.ok(await page.locator(`[data-id="${textbox.id}"] tspan`).count() > 1);
+    assert.ok((await page.locator(`[data-id="${textbox.id}"] tspan`).count()) > 1);
     await page.locator(`[data-id="${textbox.id}"]`).dblclick();
     await page.locator('#inline-text-editor').fill('Discard this');
     await page.locator('#inline-text-editor').press('Escape');
-    assert.ok((await page.locator('#object-text').inputValue()).startsWith('This is a much longer'));
+    assert.ok(
+      (await page.locator('#object-text').inputValue()).startsWith('This is a much longer')
+    );
     await page.locator(`[data-id="${rectangle.id}"]`).click();
     await page.locator(`[data-id="${circle.id}"]`).click({ modifiers: ['Control'] });
     assert.equal(await page.locator('#inspector-content h2').textContent(), '2 objects selected');
@@ -146,14 +217,25 @@ const path = require('node:path');
     await page.locator(`[data-id="${circle.id}"]`).click({ modifiers: ['Shift'] });
     assert.equal(await page.locator('#inspector-content h2').textContent(), '2 objects selected');
     const startRect = await page.locator(`[data-id="${rectangle.id}"]`).boundingBox();
-    const oldCircleX = Number(await page.locator(`[data-id="${circle.id}"] ellipse`).first().getAttribute('cx'));
+    const oldCircleX = Number(
+      await page.locator(`[data-id="${circle.id}"] ellipse`).first().getAttribute('cx')
+    );
     await page.mouse.move(startRect.x + startRect.width / 2, startRect.y + startRect.height / 2);
     await page.mouse.down();
-    await page.mouse.move(startRect.x + startRect.width / 2 + 25, startRect.y + startRect.height / 2 + 20, { steps: 5 });
+    await page.mouse.move(
+      startRect.x + startRect.width / 2 + 25,
+      startRect.y + startRect.height / 2 + 20,
+      { steps: 5 }
+    );
     await page.mouse.up();
-    const deltaRect = Number(await page.locator(`[data-id="${rectangle.id}"] rect`).first().getAttribute('x')) - rectangle.x;
-    const deltaCircle = Number(await page.locator(`[data-id="${circle.id}"] ellipse`).first().getAttribute('cx')) - oldCircleX;
-    assert.ok(deltaRect > 0); assert.equal(deltaRect, deltaCircle, 'Selected shapes move together');
+    const deltaRect =
+      Number(await page.locator(`[data-id="${rectangle.id}"] rect`).first().getAttribute('x')) -
+      rectangle.x;
+    const deltaCircle =
+      Number(await page.locator(`[data-id="${circle.id}"] ellipse`).first().getAttribute('cx')) -
+      oldCircleX;
+    assert.ok(deltaRect > 0);
+    assert.equal(deltaRect, deltaCircle, 'Selected shapes move together');
     await page.locator('#stage').focus();
     await page.keyboard.press('Control+c');
     await page.keyboard.press('Control+v');
@@ -171,7 +253,9 @@ const path = require('node:path');
     }
     assert.equal(await page.locator('#layers .layer').count(), 5);
     await page.locator('[data-component="checkbox"]').click();
-    const groupIds = await page.locator('#canvas [data-id]').evaluateAll(nodes => nodes.slice(-2).map(n => n.dataset.id));
+    const groupIds = await page
+      .locator('#canvas [data-id]')
+      .evaluateAll((nodes) => nodes.slice(-2).map((n) => n.dataset.id));
     await page.locator(`[data-id="${groupIds[1]}"]`).dblclick();
     await page.locator('#inline-text-editor').fill('Updated checkbox label');
     await page.locator('#inline-text-editor').press('Control+Enter');
@@ -187,21 +271,35 @@ const path = require('node:path');
     await page.getByRole('button', { name: 'Download PNG' }).click();
     assert.equal((await app.evaluate(() => globalThis.downloadResult)).state, 'completed');
     const featureFile = path.join(artifacts, 'text-features.sketchui');
-    await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); }, featureFile);
+    await app.evaluate(({ dialog }, destination) => {
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination });
+    }, featureFile);
     await page.locator('#save-project').click();
-    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
+    await page.waitForFunction(() =>
+      document.querySelector('#save-state').textContent.startsWith('✓')
+    );
     const savedFeatures = JSON.parse(await fs.readFile(featureFile, 'utf8'));
-    assert.equal(savedFeatures.pages[0].objects.find(o => o.id === rectangle.id).padding, 24);
-    assert.equal(savedFeatures.pages[0].objects.find(o => o.id === rectangle.id).text, 'Text inside a rectangle');
+    assert.equal(savedFeatures.pages[0].objects.find((o) => o.id === rectangle.id).padding, 24);
+    assert.equal(
+      savedFeatures.pages[0].objects.find((o) => o.id === rectangle.id).text,
+      'Text inside a rectangle'
+    );
     await page.locator('#file-input').setInputFiles(featureFile);
-    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
+    await page.waitForFunction(() =>
+      document.querySelector('#save-state').textContent.startsWith('✓')
+    );
     await page.screenshot({ path: path.join(artifacts, 'editor-text-features.png') });
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1100, 720));
     await page.waitForTimeout(100);
     await page.screenshot({ path: path.join(artifacts, 'editor-minimum.png') });
-    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth), false);
+    assert.equal(
+      await page.evaluate(() => document.documentElement.scrollWidth > innerWidth),
+      false
+    );
     assert.deepEqual(errors, []);
-    console.log('Desktop checks passed: original editing/save/export checks plus persistent pen, inline shape/text editing, wrapping, alignment/padding, edit cancel, Ctrl/Shift multi-select and shared drag, native copy/paste and undo, grouped labels/parts, new formatting round-trip/export. No renderer errors.');
+    console.log(
+      'Desktop checks passed: original editing/save/export checks plus persistent pen, inline shape/text editing, wrapping, alignment/padding, edit cancel, Ctrl/Shift multi-select and shared drag, native copy/paste and undo, grouped labels/parts, new formatting round-trip/export. No renderer errors.'
+    );
   } catch (error) {
     console.error(error);
     const windows = app.windows();
@@ -210,4 +308,7 @@ const path = require('node:path');
   } finally {
     await app.evaluate(({ app }) => app.exit(0)).catch(() => {});
   }
-})().catch(error => { console.error(error); process.exitCode = 1; });
+})().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

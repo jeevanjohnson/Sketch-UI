@@ -133,3 +133,55 @@ Published latest, non-prerelease release: https://github.com/jeevanjohnson/Sketc
 GitHub API verified both assets have state uploaded, expected byte lengths and matching SHA-256 digests. Installer SketchUI-Setup-1.3.0-x64.exe: 265023449 bytes, a726bbec43ad7f86cef7b23e831fe6883d9a45633dd2cef21b6dd31ccc83e2b5. SHA256SUMS.txt: 95 bytes, f27fe1f58e04b44cfbb9d4f8f432d87c9eb3d2e19db04473ffde1259ecdc739d. Remote main and the dereferenced annotated tag were verified at the release commit after publication.
 
 The release was created as a draft, its assets were uploaded and verified, and only then was it published as latest. The GitHub connector lacked release upload operations, so publication used standard Git credential-manager authentication with GitHub REST; no credential values were logged or stored in project files. The installer remains unsigned. Manual install/uninstall remains unperformed. This completion record is a documentation-only follow-up; release tag and installer still correspond to the exact source commit above.
+
+## 2026-10-23 — updated code-quality standards review
+
+Reviewed working tree starting at befeb83 (initially clean), using the updated coding-workflow and review-code standards. Covered renderer actions/state, artwork/export paths, model construction/validation/history, text layout, image dialog and pixel processing, desktop main/preload/worker boundaries, preview/build configuration, and existing tests/verification tools. Preserved offline operation, editable version-1 files, UI decisions, dependencies, repository layout, and staging.
+
+Resolved findings:
+
+- Reverse-direction lines/arrows were mistaken for tiny click-created objects because finishInteraction compared signed dimensions with 5. It now compares absolute dimensions. The desktop suite independently asserts the path of an up-left drag from (700,550) to (550,400).
+- History's deduplicated image pool retained assets after redo branches or old snapshots were dropped. History now releases assets no retained snapshot references. Monotonic IDs prevent collisions after cleanup. Tests exercise abandoned branches, originalSrc, subsequent images, the 100-state limit, and restoration of the earliest retained state.
+- Project validation accepted non-string object names and non-boolean sketch/annotation flags, which could break layer/part rendering or alter export semantics. Added validation and malformed page/object checks, with regression tests. Old valid documents still round-trip.
+- Desktop/save/image verification searched for 'saved', which also matches 'Unsaved'. A repeat run read stale output and failed at a missing rectangle. All such waits now require the explicit saved checkmark; assertions and expected document contents were preserved. The corrected suites passed.
+- Artwork rendering mixed object types, hit areas, text clipping, and inline geometry in app.mjs. New object-renderer.mjs owns SVG generation with named helpers for text, images, shapes, strokes and arrowheads. app.mjs passes shared text measurements and editing identity; stage artwork and PNG export both call the same renderer. Preview allowlist and syntax checks include the new module.
+- Expanded validation guards, crop/pixel loops and text alignment calculations; named crop-to-page scale values replace dense repeated expressions. Added module purpose/input/output/collaborator comments at runtime boundaries. These are targeted readability improvements, not a claim that all legacy compact control handlers were reformatted.
+
+Verification on final implementation:
+
+- npm run check: passed (includes object-renderer.mjs and text-layout.mjs).
+- npm test: 15/15 passed.
+- Isolated mutation/negative control under ignored artifacts/history-negative-control-*: deliberately removed history cleanup in a copied model, then ran copied model tests. Both new cleanup tests failed through assertions. Production files were never mutated; unmodified tests passed.
+- node src/tools/verify-desktop.cjs: passed with reverse-arrow regression, editing, text, selection, grouping, clipboard, undo, native project round-trip, PNG exports, and minimum window width; no renderer errors. Final editor-text-features.png visually inspected.
+- node src/tools/verify-save.cjs: passed native folder/save/overwrite/Save As/cancel/Open/failure recovery with corrected completion waits.
+- node src/tools/verify-images.cjs: passed native image clipboard, editable paste, crop, color removal, automatic local model, embedded project round-trip and PNG export with corrected completion waits; no renderer errors.
+- node src/tools/verify-preview.cjs: passed HTML, app and new renderer module, SVG favicon, and denial of non-public files.
+- node src/tools/verify-architecture.cjs: passed details, filtering and Save trace. Reused the existing explorer, updating renderer connections and source locators. Runtime placement and communication paths did not change.
+- git diff --check: passed; Git emits existing LF-to-CRLF notices.
+
+Electron initially could not launch inside the sandbox; approved runs outside that restriction passed. Native dialogs are controlled by test responses. No large-project performance benchmark, new packaged build, manual installer test, commit, push, or publication was performed. Existing published installers do not contain these working-tree changes. Source readability and bounded history ownership improved; no unmeasured performance gain is claimed.
+
+## 2026-10-24 — formatting standards second pass
+
+Re-read updated coding-workflow/review-code and the newly linked coding-workflow/references/formatting.md. The previous pass had left compressed handlers, inconsistent horizontal spacing and insufficient blank-line grouping in the reviewed scope. Continued from the existing uncommitted changes without resetting or staging them.
+
+Verified temporary Prettier 3.6.2, saved its configuration in package.json, and formatted all src JavaScript modules, tests, tools, styles and HTML plus architecture/index.html. Added npm run format and npm run format:check, documented in src/tools/README.md. The formatter is pinned through npm exec, with no runtime/development dependency or lockfile changes; first use can require registry access. Existing source/build layout remains unchanged.
+
+Manually separated editor document/view/async state, runtime initialization and IPC registrations, and related History/image-editor methods with blank lines. Replaced nested tool cursor/hint conditions with explicit select/hand/drawing branches. Calculated the inspector heading before rendering rather than nesting selection/type conditions in markup. Embedded HTML templates now participate in formatting. Kept fixed SVG literals intact and refreshed architecture source line evidence after reformatting.
+
+One intermediate desktop regression failed because formatting inserted whitespace into an inspector heading's textContent. Moved the heading computation out of the template so its original text is preserved. No assertion or expected result was weakened. This illustrates why the formatter alone did not complete the review.
+
+Final checks:
+
+- npm run format:check: passed for all configured source paths.
+- Node syntax checks: passed for every .mjs/.cjs under src, including tests and tools.
+- npm test: 15/15 passed; previous defect regressions remain intact.
+- verify-desktop: passed editor, reverse-arrow, text, grouping, clipboard, undo, project round-trip and PNG checks; no renderer errors.
+- verify-save: passed native file lifecycle, cancel and failure recovery.
+- verify-images: passed crop, clipboard, local color/model cutouts, self-contained project round-trip and PNG export; no renderer errors.
+- verify-preview: passed HTTP content and allowlist checks.
+- verify-architecture: passed navigation, filter and Save trace.
+- Final editor-text-features.png visually inspected; blue desktop shell, canvas content and inspector remain usable.
+- git diff --check: passed (line-ending notices only).
+
+Electron/localhost suites ran with approved sandbox escalation. No installer was rebuilt and no commit, push or publication occurred. Existing release assets still represent the previous release. This pass verifies readability/formatting and existing regression behavior; it does not claim exhaustive correctness or measured large-project performance.
