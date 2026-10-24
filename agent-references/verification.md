@@ -206,3 +206,15 @@ Checks on prepared source/artifacts:
 The prepared artifact is associated with the current runtime source and manifest metadata by byte comparison. After the release commit is created, repeat this comparison before publication. Native dialog responses were controlled by tests; manual installer install/uninstall was not performed. No new release commit/tag/push/publication has occurred. The project's concrete-proposal confirmation requirement remains pending; see release-proposal-1.3.1.md.
 
 Publication confirmation received on 2026-10-24. Before release writes, remote main still matched 09968f5, v1.3.1 was absent, installer SHA-256 matched the approved value, and all 18 packaged runtime/license assets and manifest identity/dependencies matched source again.
+
+## SketchUI 1.3.1 — publication completed, 2026-10-24
+
+Approved release source commit ffdc345e578c7e8673950909989a54d0e05976ab was committed and pushed to origin/main. Annotated v1.3.1 was created and pushed at the same source commit. All 18 packaged runtime/license inputs, package identity and dependencies matched this unchanged release source after committing.
+
+Published as regular latest release: https://github.com/jeevanjohnson/Sketch-UI/releases/tag/v1.3.1 (release ID 422585241). GitHub was first given a draft release, both assets were uploaded, and their state, byte length and SHA-256 digest were verified before publishing. The published release is not a draft or prerelease, and GitHub's latest endpoint returned the same release ID.
+
+Verified assets:
+- SketchUI-Setup-1.3.1-x64.exe: 265026441 bytes; SHA-256 ed8aea14aca26636d8ca655d9e64beccff36dc535bd0ce41dd23e3a18abac084.
+- SHA256SUMS-1.3.1.txt: 95 bytes; SHA-256 aba4e5a869b0836e825043aadd1c401b9171e5bd4af54e5c58dae3b575a97970.
+
+GitHub's connector lacks release upload operations, so the approved publication used GitHub REST with existing Git credential-manager authentication. Credentials stayed in process memory and were not logged or saved in project files. Task-specific upload state is in ignored artifacts/release-1.3.1/publication.json. Only installer/checksum assets were published; unpacked output and blockmaps remain local. The installer remains unsigned; manual install/uninstall remains unperformed. The publication-record follow-up changes documentation only; release tag and binary remain associated with ffdc345.

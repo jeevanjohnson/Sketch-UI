@@ -1,6 +1,6 @@
 # Publication proposal — SketchUI 1.3.1
 
-Status: approved by the user on 2026-10-24; built and verified locally. Publication is in progress; the preparation details below record the approved payload.
+Status: approved by the user and published on 2026-10-24. Release: https://github.com/jeevanjohnson/Sketch-UI/releases/tag/v1.3.1. Source commit: ffdc345e578c7e8673950909989a54d0e05976ab; annotated tag: v1.3.1. The preparation details below are retained as the approved publication record.
 
 ## Destination and source
 
