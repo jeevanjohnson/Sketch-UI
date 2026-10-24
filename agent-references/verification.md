@@ -185,3 +185,24 @@ Final checks:
 - git diff --check: passed (line-ending notices only).
 
 Electron/localhost suites ran with approved sandbox escalation. No installer was rebuilt and no commit, push or publication occurred. Existing release assets still represent the previous release. This pass verifies readability/formatting and existing regression behavior; it does not claim exhaustive correctness or measured large-project performance.
+
+## 2026-10-24 — SketchUI 1.3.1 release preparation
+
+Prepared patch release 1.3.1 from pushed main 09968f59848513df2dd8f075ccb340d3349fcfb5. Remote main matched; latest published release was v1.3.0 and remote v1.3.1 did not exist at preparation. No GitHub publishing workflow is configured. Version metadata changed only in package.json and root package-lock fields; dependencies are unchanged. README installer names/comparison, release notes/proposal and repository/output records were updated.
+
+Checks on prepared source/artifacts:
+
+- npm run check: passed; npm test: 15/15 passed.
+- npm run dist: real Windows x64 NSIS build passed.
+- node src/tools/verify-package.cjs: all 18 runtime/license assets byte-match source; package identity/dependencies match; tests/tools excluded.
+- node src/tools/verify-save.cjs --packaged: passed native save, overwrite, Save As/cancel, legacy Open/save and failed-write recovery.
+- node src/tools/verify-desktop.cjs --packaged: passed editing, reverse-arrow, text, multi-selection, clipboard, grouping, undo, project round-trip and PNG export; no renderer errors.
+- node src/tools/verify-images.cjs --packaged: passed native/editable clipboard, nondestructive crop, color removal, automatic local cutout/cancellation, embedded project round-trip and PNG export; no renderer errors.
+- Executable metadata: ProductName/FileDescription SketchUI, ProductVersion 1.3.1.0, FileVersion 1.3.1.
+- Authenticode: executable and installer both NotSigned. Builder signtool messages do not establish a signed release.
+- Installer: releases/SketchUI-Setup-1.3.1-x64.exe, 265026441 bytes; SHA-256 ed8aea14aca26636d8ca655d9e64beccff36dc535bd0ce41dd23e3a18abac084.
+- Checksum asset: releases/SHA256SUMS-1.3.1.txt; previous local 1.3.0 installer/checksum were retained.
+
+The prepared artifact is associated with the current runtime source and manifest metadata by byte comparison. After the release commit is created, repeat this comparison before publication. Native dialog responses were controlled by tests; manual installer install/uninstall was not performed. No new release commit/tag/push/publication has occurred. The project's concrete-proposal confirmation requirement remains pending; see release-proposal-1.3.1.md.
+
+Publication confirmation received on 2026-10-24. Before release writes, remote main still matched 09968f5, v1.3.1 was absent, installer SHA-256 matched the approved value, and all 18 packaged runtime/license assets and manifest identity/dependencies matched source again.

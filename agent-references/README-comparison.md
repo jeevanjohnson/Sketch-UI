@@ -2,15 +2,11 @@
 
 Clean copy: [README.md](../README.md). Removed lines are struck out; additions are bold. Compared with the README saved immediately before release preparation.
 
-**\# SketchUI**
-
-~~\# Sketch UI~~
+\# SketchUI
 
 
 
-**\!\[SketchUI logo\](src/assets/icon.svg)**
-
-~~\!\[Sketch UI logo\](src/assets/icon.svg)~~
+\!\[SketchUI logo\](src/assets/icon.svg)
 
 
 
@@ -22,9 +18,7 @@ An offline Windows app for sketching interfaces and exporting them as visual ref
 
 
 
-**The best way to help AI design what you have in mind is to lay it out. SketchUI gives you a place to draw shapes, add text and images, and arrange interface elements before asking AI to build them.**
-
-~~The best way to help AI design what you have in mind is to lay it out. Sketch UI gives you a place to draw shapes, add text and images, and arrange interface elements before asking AI to build them.~~
+The best way to help AI design what you have in mind is to lay it out. SketchUI gives you a place to draw shapes, add text and images, and arrange interface elements before asking AI to build them.
 
 
 
@@ -36,21 +30,17 @@ Share the exported sketch with a few references and notes about how it should wo
 
 
 
-**If you have a packaged Windows build, run \`SketchUI-Setup-1.3.0-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.**
+**If you have a packaged Windows build, run \`SketchUI-Setup-1.3.1-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.**
 
-~~If you have a packaged Windows build, run \`Sketchroom Setup \<version\>.exe\` and follow the installer. You can then open Sketchroom from its desktop shortcut. The installed app currently uses the name \*\*Sketchroom\*\*.~~
-
-
-
-**You can also run \`win-unpacked/SketchUI.exe\` from an unpacked build. Keep the whole \`win-unpacked\` folder together.**
-
-~~You can also run \`win-unpacked/Sketchroom.exe\` from an unpacked build. Keep the whole \`win-unpacked\` folder together.~~
+~~If you have a packaged Windows build, run \`SketchUI-Setup-1.3.0-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.~~
 
 
 
-**Release downloads: \[GitHub Releases\](https://github.com/jeevanjohnson/Sketch-UI/releases). To build the app yourself, follow the developer instructions below. Once installed, the app works offline, including image background removal.**
+You can also run \`win-unpacked/SketchUI.exe\` from an unpacked build. Keep the whole \`win-unpacked\` folder together.
 
-~~No public download is configured yet. To build the app yourself, follow the developer instructions below. Once installed, the app works offline, including image background removal.~~
+
+
+Release downloads: \[GitHub Releases\](https://github.com/jeevanjohnson/Sketch-UI/releases). To build the app yourself, follow the developer instructions below. Once installed, the app works offline, including image background removal.
 
 
 
@@ -66,15 +56,11 @@ Share the exported sketch with a few references and notes about how it should wo
 
 - Export a PNG to share in a design conversation.
 
-**- Save an editable \`.sketchui\` project and return to it later.**
-
-~~- Save an editable \`.sketchroom\` project and return to it later.~~
+- Save an editable \`.sketchui\` project and return to it later.
 
 
 
-**Save (\`Ctrl+S\`) updates the current project file. Save As (\`Ctrl+Shift+S\`) creates a separate copy. New saves default to an automatically created \`Documents/SketchUI/\<project name\>/\` folder. Existing \`.sketchroom\` files still open. There is no autosave.**
-
-~~Save (\`Ctrl+S\`) updates the current project file. Save As (\`Ctrl+Shift+S\`) creates a separate copy. New saves default to an automatically created \`Documents/Sketchroom/\<project name\>/\` folder. There is no autosave.~~
+Save (\`Ctrl+S\`) updates the current project file. Save As (\`Ctrl+Shift+S\`) creates a separate copy. New saves default to an automatically created \`Documents/SketchUI/\<project name\>/\` folder. Existing \`.sketchroom\` files still open. There is no autosave.
 
 
 
@@ -82,37 +68,37 @@ Share the exported sketch with a few references and notes about how it should wo
 
 
 
-**\#\#\# Let your agent handle setup**
+\#\#\# Let your agent handle setup
 
 
 
-**If you want your agent to install it for you, give it this repository link or the downloaded folder, then copy and paste this prompt:**
+If you want your agent to install it for you, give it this repository link or the downloaded folder, then copy and paste this prompt:
 
 
 
-**\`\`\`text**
+\`\`\`text
 
-**Help me install and run SketchUI locally on Windows from https://github.com/jeevanjohnson/Sketch-UI or the project folder I provide.**
-
-
-
-**Read README.md, AGENTS.md and package.json first. Check that Node.js 22.12 or newer and npm are available. From the repository root, run npm ci, npx install-electron --no, and npm start.**
+Help me install and run SketchUI locally on Windows from https://github.com/jeevanjohnson/Sketch-UI or the project folder I provide.
 
 
 
-**If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.0-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.**
-
-**\`\`\`**
+Read README.md, AGENTS.md and package.json first. Check that Node.js 22.12 or newer and npm are available. From the repository root, run npm ci, npx install-electron --no, and npm start.
 
 
 
-**\#\#\# Install manually**
+**If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.1-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.**
+
+~~If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.0-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.~~
+
+\`\`\`
 
 
 
-**If you prefer to do it manually, install Node.js 22.12 or newer on Windows, then clone or download this repository. Open a terminal in the repository root and run:**
+\#\#\# Install manually
 
-~~Install Node.js 22.12 or newer on Windows, then clone or download this repository. Open a terminal in the repository root and run:~~
+
+
+If you prefer to do it manually, install Node.js 22.12 or newer on Windows, then clone or download this repository. Open a terminal in the repository root and run:
 
 
 
@@ -162,6 +148,4 @@ Build output goes into \`releases/\`. \`npm run preview\` serves a local browser
 
 
 
-**The repository uses \`src/\` for code, \`agent-references/\` for project guidance, \`architecture/\` for the offline architecture explorer, and \`releases/\` for local builds. See the \[user guide\](agent-references/GUIDE.md), \[repository conventions\](agent-references/repository-conventions.md), and \[verification record\](agent-references/verification.md) for details. SketchUI is licensed under \[AGPL-3.0\](LICENSE): you may use, modify and redistribute it, including commercially, subject to its source-sharing requirements.**
-
-~~The repository uses \`src/\` for code, \`agent-references/\` for project guidance, \`architecture/\` for the offline architecture explorer, and \`releases/\` for local builds. See the \[user guide\](agent-references/GUIDE.md), \[repository conventions\](agent-references/repository-conventions.md), and \[verification record\](agent-references/verification.md) for details. A project license has not been selected yet.~~
+The repository uses \`src/\` for code, \`agent-references/\` for project guidance, \`architecture/\` for the offline architecture explorer, and \`releases/\` for local builds. See the \[user guide\](agent-references/GUIDE.md), \[repository conventions\](agent-references/repository-conventions.md), and \[verification record\](agent-references/verification.md) for details. SketchUI is licensed under \[AGPL-3.0\](LICENSE): you may use, modify and redistribute it, including commercially, subject to its source-sharing requirements.

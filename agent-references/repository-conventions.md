@@ -61,4 +61,4 @@ Add `--packaged` to desktop/image checks to exercise a built executable. No auto
 
 The user owns Git initialization, remote setup and visibility. Organization does not authorize commit, push or publication. Before a public release, use the selected AGPL-3.0-only license; review bundled dependency/model notices and source contents; choose version/tag, release destination and signing policy; then build and verify the packaged app, including offline image processing and native save behavior.
 
-Use deploy only for an explicitly requested release with its concrete proposal. Publish installers as release assets, not source files. The release version is 1.3.0; no new public release is claimed. Ordinary commit/push must not publish a release.
+Use deploy only for an explicitly requested release with its concrete proposal. Publish installers as release assets, not source files. The published release is 1.3.0; version 1.3.1 is being prepared and is not yet published. Ordinary commit/push must not publish a release.
