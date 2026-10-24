@@ -1,6 +1,13 @@
 node_modules/
-release/
-release-*/
+releases/*
+!releases/README.md
 .git-context/
 artifacts/
 .token-governor/
+agent-references/reference-images/
+*.sketchroom
+*.tmp
+.env
+.env.*
+!.env.example
+*.sketchui

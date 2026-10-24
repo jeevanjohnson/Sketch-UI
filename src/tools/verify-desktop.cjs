@@ -4,13 +4,13 @@ const fs = require('node:fs/promises');
 const path = require('node:path');
 
 (async () => {
-  const root = path.resolve(__dirname, '..');
+  const root = path.resolve(__dirname, '..', '..');
   const artifacts = path.join(root, 'artifacts');
   await fs.mkdir(artifacts, { recursive: true });
   const packaged = process.argv.includes('--packaged');
   const app = await electron.launch({
     args: packaged ? [] : [root],
-    executablePath: packaged ? path.join(root, 'release-1.2', 'win-unpacked', 'Sketchroom.exe') : require('electron')
+    executablePath: packaged ? path.join(root, 'releases', 'win-unpacked', 'SketchUI.exe') : require('electron')
   });
   try {
     const page = await app.firstWindow();
@@ -81,18 +81,17 @@ const path = require('node:path');
     assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
     assert.equal(bytes.readUInt32BE(16), 390);
     assert.equal(bytes.readUInt32BE(20), 844);
-    const projectPath = path.join(artifacts, 'roundtrip.sketchroom');
-    await prepareDownload(projectPath);
+    const projectPath = path.join(artifacts, 'roundtrip.sketchui');
+    await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); }, projectPath);
     await page.locator('#save-project').click();
-    const file = await app.evaluate(() => globalThis.downloadResult);
-    assert.equal(file.state, 'completed');
+    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
     const document = JSON.parse(await fs.readFile(projectPath, 'utf8'));
     assert.equal(document.pages.length, 2);
     assert.ok(document.pages[0].objects.some(o => o.text === 'Edited card detail'));
     await page.locator('#file-input').setInputFiles(projectPath);
     await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
     assert.equal(await page.locator('.page-item').count(), 2);
-    await page.locator('#file-input').setInputFiles({ name: 'invalid.sketchroom', mimeType: 'application/json', buffer: Buffer.from('{"format":"wrong"}') });
+    await page.locator('#file-input').setInputFiles({ name: 'invalid.sketchui', mimeType: 'application/json', buffer: Buffer.from('{"format":"wrong"}') });
     await page.waitForFunction(() => document.querySelector('#toast').textContent.includes('Could not open'));
     assert.equal(await page.locator('.page-item').count(), 2, 'Invalid file leaves current project intact');
     await page.locator('.page-item').first().click();
@@ -116,7 +115,7 @@ const path = require('node:path');
     const circle = model.shape('ellipse', 500, 160, 230, 170, { fill: '#eee4cf' });
     const textbox = model.shape('text', 100, 400, 200, 40, { text: 'Original text', fill: '#252722' });
     featurePage.objects = [rectangle, circle, textbox];
-    await page.locator('#file-input').setInputFiles({ name: 'features.sketchroom', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'sketchroom', version: 1, name: 'Feature checks', pages: [featurePage] })) });
+    await page.locator('#file-input').setInputFiles({ name: 'features.sketchui', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify({ format: 'sketchroom', version: 1, name: 'Feature checks', pages: [featurePage] })) });
     await page.waitForFunction(() => document.querySelector('#project-name').value === 'Feature checks');
     await page.locator('[data-tool="select"]').click();
     await page.locator(`[data-id="${rectangle.id}"]`).dblclick();
@@ -187,10 +186,10 @@ const path = require('node:path');
     await prepareDownload(path.join(artifacts, 'export-text-features.png'));
     await page.getByRole('button', { name: 'Download PNG' }).click();
     assert.equal((await app.evaluate(() => globalThis.downloadResult)).state, 'completed');
-    const featureFile = path.join(artifacts, 'text-features.sketchroom');
-    await prepareDownload(featureFile);
+    const featureFile = path.join(artifacts, 'text-features.sketchui');
+    await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); }, featureFile);
     await page.locator('#save-project').click();
-    assert.equal((await app.evaluate(() => globalThis.downloadResult)).state, 'completed');
+    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
     const savedFeatures = JSON.parse(await fs.readFile(featureFile, 'utf8'));
     assert.equal(savedFeatures.pages[0].objects.find(o => o.id === rectangle.id).padding, 24);
     assert.equal(savedFeatures.pages[0].objects.find(o => o.id === rectangle.id).text, 'Text inside a rectangle');

@@ -1,0 +1,66 @@
+const { _electron: electron } = require('@playwright/test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs/promises');
+const path = require('node:path');
+(async () => {
+  const root=path.resolve(__dirname,'..','..');
+  const folder=path.join(root,'artifacts','save-flow');
+  await fs.mkdir(folder,{recursive:true});
+  const packaged = process.argv.includes('--packaged');
+  const app=await electron.launch({args:packaged ? [] : [root],executablePath:packaged ? path.join(root,'releases','win-unpacked','SketchUI.exe') : require('electron')});
+  try {
+    const page=await app.firstWindow();
+    await page.waitForSelector('#save-project');
+    assert.ok((await page.title()).startsWith('SketchUI'));
+    assert.equal(await app.evaluate(({app})=>app.getName()),'SketchUI');
+    assert.equal(await page.locator('.brand').getAttribute('aria-label'),'SketchUI home');
+    await app.evaluate(({app,dialog},folder)=>{
+      app.setPath('documents',folder);
+      globalThis.saveDialogs=[];
+      dialog.showSaveDialog=async (_window,options)=>{
+        if (options.filters[0].extensions[0] !== 'sketchui') throw new Error('Save dialog must default to .sketchui');
+        globalThis.saveDialogs.push(options.defaultPath);
+        return globalThis.cancelSave ? {canceled:true} : {canceled:false,filePath:options.defaultPath};
+      };
+    },folder);
+    const rename=async name=>{await page.locator('#project-name').fill(name);await page.locator('#project-name').press('Tab');};
+    const saved=()=>page.waitForFunction(()=>document.querySelector('#save-state').textContent.includes('saved'));
+    await rename('My sketch'); await page.locator('#save-project').click(); await saved();
+    const first=path.join(folder,'SketchUI','My sketch','My sketch.sketchui');
+    assert.equal(JSON.parse(await fs.readFile(first,'utf8')).name,'My sketch');
+    await rename('Edited'); await page.keyboard.press('Control+s'); await saved();
+    assert.equal(JSON.parse(await fs.readFile(first,'utf8')).name,'Edited');
+    assert.equal(await app.evaluate(()=>globalThis.saveDialogs.length),1);
+    await app.evaluate(()=>{globalThis.cancelSave=true;});
+    await rename('Copy'); await page.locator('#save-as-project').click();
+    await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('canceled'));
+    assert.ok((await page.locator('#save-state').textContent()).includes('Unsaved'));
+    await app.evaluate(()=>{globalThis.cancelSave=false;});
+    await page.keyboard.press('Control+Shift+s'); await saved();
+    const copy=path.join(folder,'SketchUI','Copy','Copy.sketchui');
+    assert.equal(JSON.parse(await fs.readFile(copy,'utf8')).name,'Copy');
+    assert.equal(JSON.parse(await fs.readFile(first,'utf8')).name,'Edited');
+    const legacy = path.join(folder, 'legacy.sketchroom');
+    await fs.copyFile(first, legacy);
+    await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},legacy);
+    await page.locator('#open-project').click();
+    await page.waitForFunction(()=>document.querySelector('#project-name').value==='Edited');
+    await rename('Opened and saved'); await page.locator('#save-project').click(); await saved();
+    assert.equal(JSON.parse(await fs.readFile(legacy,'utf8')).name,'Opened and saved');
+    await app.evaluate(({dialog},file)=>{dialog.showSaveDialog=async()=>({canceled:false,filePath:file});},path.join(folder,'missing','fail.sketchui'));
+    await rename('Must remain unsaved'); await page.locator('#save-as-project').click();
+    await page.waitForFunction(()=>document.querySelector('#toast').textContent.includes('Could not save'));
+    assert.ok((await page.locator('#save-state').textContent()).includes('Unsaved'));
+    await page.locator('#save-project').click(); await saved();
+    assert.equal(JSON.parse(await fs.readFile(legacy,'utf8')).name,'Must remain unsaved');
+    await page.locator('#new-project').click();
+    await page.waitForFunction(()=>document.querySelector('#project-name').value==='Untitled project');
+    await rename('Fresh project');
+    await app.evaluate(({dialog})=>{dialog.showSaveDialog=async (_window,options)=>({canceled:false,filePath:options.defaultPath});});
+    await page.locator('#save-project').click(); await saved();
+    assert.equal(JSON.parse(await fs.readFile(path.join(folder,'SketchUI','Fresh project','Fresh project.sketchui'),'utf8')).name,'Fresh project');
+    assert.equal(JSON.parse(await fs.readFile(legacy,'utf8')).name,'Must remain unsaved');
+    await page.screenshot({path:path.join(root,'artifacts','save-ui.png')});
+    console.log('Save flow passed: managed folders, overwrite, Save As, cancel, open/save, failed write retains current target.');
+  } finally { await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows().forEach(w=>w.destroy());}); await app.close(); }
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -5,13 +5,13 @@ const path = require('node:path');
 const sharp = require('sharp');
 
 (async () => {
-  const root = path.resolve(__dirname, '..'), artifacts = path.join(root, 'artifacts');
+  const root = path.resolve(__dirname, '..', '..'), artifacts = path.join(root, 'artifacts');
   await fs.mkdir(artifacts, { recursive: true });
   const fixture = await sharp({ create: { width: 200, height: 160, channels: 4, background: '#ffffff' } })
     .composite([{ input: Buffer.from('<svg width="200" height="160"><rect x="60" y="40" width="80" height="80" rx="10" fill="#25408a"/></svg>') }]).png().toBuffer();
   const fixtureSource = `data:image/png;base64,${fixture.toString('base64')}`;
   const packaged = process.argv.includes('--packaged');
-  const app = await electron.launch({ args: packaged ? [] : [root], executablePath: packaged ? path.join(root, 'release-1.2', 'win-unpacked', 'Sketchroom.exe') : require('electron') });
+  const app = await electron.launch({ args: packaged ? [] : [root], executablePath: packaged ? path.join(root, 'releases', 'win-unpacked', 'SketchUI.exe') : require('electron') });
   try {
     const page = await app.firstWindow(); page.setDefaultTimeout(15000);
     const errors = []; page.on('pageerror', error => errors.push(error.message));
@@ -60,7 +60,7 @@ const sharp = require('sharp');
     });
     assert.deepEqual(removed.size, { width: 100, height: 160 });
     assert.equal(removed.alpha, 0); assert.equal(removed.foregroundAlpha, 255);
-    await page.locator('#image-input').setInputFiles(path.join(root, 'references', 'ramen.png'));
+    await page.locator('#image-input').setInputFiles({ name: 'plant.png', mimeType: 'image/png', buffer: await sharp(path.join(root, 'src', 'tests', 'fixtures', 'plant.svg')).png().toBuffer() });
     await page.waitForFunction(n => document.querySelectorAll('#layers .layer').length === n + 3, count);
     await page.locator('[data-action="edit-image"]').click();
     await page.waitForFunction(() => document.querySelector('#image-status').textContent.includes('Drag to crop'));
@@ -79,9 +79,9 @@ const sharp = require('sharp');
         }));
       }, destination);
     };
-    const projectPath = path.join(artifacts, 'images-roundtrip.sketchroom');
-    await prepareDownload(projectPath); await page.locator('#save-project').click();
-    assert.equal(await app.evaluate(() => globalThis.imageDownload), 'completed');
+    const projectPath = path.join(artifacts, 'images-roundtrip.sketchui');
+    await app.evaluate(({ dialog }, destination) => { dialog.showSaveDialog = async () => ({ canceled: false, filePath: destination }); }, projectPath); await page.locator('#save-project').click();
+    await page.waitForFunction(() => document.querySelector('#save-state').textContent.includes('saved'));
     const document = JSON.parse(await fs.readFile(projectPath, 'utf8'));
     const images = document.pages[0].objects.filter(o => o.type === 'image');
     assert.equal(images.length, 3); assert.equal(images[1].crop.w, .5); assert.ok(images[1].originalSrc); assert.ok(images[2].originalSrc);

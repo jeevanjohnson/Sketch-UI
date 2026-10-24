@@ -5,9 +5,9 @@ const assert = require('node:assert/strict');
 const sharp = require('sharp');
 
 (async () => {
-  const root = path.resolve(__dirname, '..');
-  const source = fs.readFileSync(path.join(root, 'references', 'ramen.png'));
-  const worker = new Worker(path.join(root, 'desktop', 'background-worker.cjs'), { workerData: { source: `data:image/png;base64,${source.toString('base64')}` } });
+  const root = path.resolve(__dirname, '..', '..');
+  const source = await sharp(path.join(root, 'src', 'tests', 'fixtures', 'plant.svg')).png().toBuffer();
+  const worker = new Worker(path.join(root, 'src', 'desktop', 'background-worker.cjs'), { workerData: { source: `data:image/png;base64,${source.toString('base64')}` } });
   const timer = setTimeout(() => { worker.terminate(); throw new Error('Model verification timed out'); }, 120000);
   try {
     const result = await new Promise((resolve, reject) => {

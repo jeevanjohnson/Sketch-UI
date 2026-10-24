@@ -620,22 +620,38 @@ function download(blob, filename) {
   const url = URL.createObjectURL(blob), a = document.createElement('a');
   a.href = url; a.download = filename; a.click(); setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
-function filename(value) { return value.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, 100) || 'Sketchroom'; }
-function save() {
-  if (pendingSave) { notify('Finish the current project download first.'); return; }
+function filename(value) { return value.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').slice(0, 100) || 'SketchUI'; }
+async function save(saveAs = false) {
+  if (pendingSave) { notify('Finish the current save first.'); return; }
   const snapshot = JSON.stringify(project);
-  if (new Blob([snapshot]).size > 100 * 1024 * 1024) { notify('This project exceeds 100 MB. Remove some large images or split it into smaller projects before saving.'); return; }
-  const name = `${filename(project.name)}.sketchroom`;
-  if (window.desktop) pendingSave = { snapshot, filename: name };
-  download(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), name);
-  if (!window.desktop) { savedState = snapshot; render(); notify('Project download requested. Keep the file somewhere safe.'); }
+  if (new Blob([snapshot]).size > 100 * 1024 * 1024) { notify('This project exceeds 100 MB. Remove some large images before saving.'); return; }
+  if (window.desktop?.saveProject) {
+    pendingSave = { snapshot };
+    try {
+      const result = await window.desktop.saveProject(JSON.stringify(project, null, 2), saveAs);
+      if (result) { savedState = snapshot; notify('Saved to ' + result.path); }
+      else notify('Save canceled. Your changes are still available.');
+    } catch (error) { notify('Could not save project: ' + error.message); }
+    finally { pendingSave = null; render(); }
+    return;
+  }
+  download(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), filename(project.name) + '.sketchui');
+  savedState = snapshot; render(); notify('Project download requested.');
+}
+async function openProject() {
+  if (pendingSave) { notify('Finish the current save first.'); return; }
+  if (!window.desktop?.openProject) { $('#file-input').click(); return; }
+  if (dirty() && !confirm('Open a project and discard unsaved changes?')) return;
+  try {
+    const content = await window.desktop.openProject();
+    if (content === null) return;
+    const next = validateProject(JSON.parse(content));
+    await window.desktop.acceptProject();
+    replaceProject(next, true); notify('Project opened. Everything is editable.');
+  } catch (error) { notify('Could not open project: ' + error.message); }
 }
 window.desktop?.onDownload(result => {
-  if (pendingSave && result.filename === pendingSave.filename) {
-    if (result.state === 'completed') { savedState = pendingSave.snapshot; notify('Project file saved. Keep it somewhere safe.'); }
-    else notify('Project download canceled or interrupted. Your changes are still unsaved.');
-    pendingSave = null; render();
-  } else if (result.filename.endsWith('.png')) {
+  if (result.filename.endsWith('.png')) {
     notify(result.state === 'completed' ? 'PNG saved. Ready for your next design conversation.' : 'PNG download canceled or interrupted. Export again to retry.');
   }
 });
@@ -644,20 +660,24 @@ function replaceProject(next, saved = false) {
   savedState = saved ? JSON.stringify(project) : ''; render(); fit();
 }
 $('#project-name').addEventListener('change', event => mutate(() => { project.name = event.target.value.trim() || 'Untitled project'; }));
-$('#save-project').addEventListener('click', save);
-$('#open-project').addEventListener('click', () => $('#file-input').click());
+$('#save-project').addEventListener('click', () => save());
+$('#save-as-project').addEventListener('click', () => save(true));
+$('#open-project').addEventListener('click', openProject);
 $('#file-input').addEventListener('change', async event => {
   const file = event.target.files[0]; if (!file) return;
   try {
     if (file.size > 100 * 1024 * 1024) throw new Error('Choose a project smaller than 100 MB.');
     const next = validateProject(JSON.parse(await file.text()));
     if (dirty() && !confirm('Open this project and discard unsaved changes?')) return;
+    await window.desktop?.resetProject();
     replaceProject(next, true); notify('Project opened. Everything is editable.');
   } catch (error) { notify(`Could not open project: ${error.message}`); }
   finally { event.target.value = ''; }
 });
-$('#new-project').addEventListener('click', () => {
+$('#new-project').addEventListener('click', async () => {
+  if (pendingSave) { notify('Finish the current save first.'); return; }
   if (dirty() && !confirm('Start a new project and discard unsaved changes?')) return;
+  await window.desktop?.resetProject();
   replaceProject({ format: 'sketchroom', version: 1, name: 'Untitled project', pages: [newPage()] });
 });
 $('#add-page').addEventListener('click', () => { $('#page-dialog').showModal(); $('#new-page-name').focus(); $('#new-page-name').select(); });
@@ -717,7 +737,7 @@ document.addEventListener('keydown', event => {
   const command = event.ctrlKey || event.metaKey;
   if ($('dialog[open]')) return;
   if (command && ['s', 'o'].includes(event.key.toLowerCase())) {
-    event.preventDefault(); event.target.blur(); event.key.toLowerCase() === 's' ? save() : $('#file-input').click(); return;
+    event.preventDefault(); event.target.blur(); event.key.toLowerCase() === 's' ? save(event.shiftKey) : openProject(); return;
   }
   if (typing) return;
   if (event.code === 'Space') { event.preventDefault(); spaceHeld = true; stage.style.cursor = 'grab'; return; }

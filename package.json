@@ -1,51 +1,69 @@
 {
-  "name": "sketchroom",
-  "version": "1.2.0",
+  "name": "sketchui",
+  "version": "1.3.0",
   "private": true,
   "description": "An offline sketchbook for interface ideas",
-  "main": "desktop/main.cjs",
+  "main": "src/desktop/main.cjs",
   "scripts": {
     "start": "electron .",
-    "preview": "node tools/serve.cjs",
-    "test": "node --test tests/*.test.mjs",
-    "check": "node --check app.mjs && node --check model.mjs && node --check image-editor.mjs && node --check image-processing.mjs && node --check image-worker.mjs && node --check desktop/main.cjs && node --check desktop/background-worker.cjs",
-    "dist": "electron-builder --win nsis --x64"
+    "preview": "node src/tools/serve.cjs",
+    "test": "node --test src/tests/*.test.mjs",
+    "check": "node --check src/app.mjs && node --check src/model.mjs && node --check src/image-editor.mjs && node --check src/image-processing.mjs && node --check src/image-worker.mjs && node --check src/desktop/main.cjs && node --check src/desktop/preload.cjs && node --check src/desktop/background-worker.cjs",
+    "dist": "electron-builder --win nsis --x64",
+    "icons": "node src/tools/build-icon.cjs"
   },
   "build": {
-    "appId": "local.sketchroom.app",
-    "productName": "Sketchroom",
+    "appId": "local.sketchui.app",
+    "productName": "SketchUI",
     "directories": {
-      "output": "release-1.2"
+      "output": "releases"
     },
     "files": [
-      "index.html",
-      "styles.css",
-      "app.mjs",
-      "model.mjs",
-      "text-layout.mjs",
-      "image-*.mjs",
-      "theme.css",
-      "THIRD_PARTY_NOTICES.md",
-      "desktop/**/*"
+      "src/*.html",
+      "src/*.css",
+      "src/*.mjs",
+      "src/THIRD_PARTY_NOTICES.md",
+      "src/desktop/**/*",
+      "src/assets/**/*",
+      "LICENSE"
     ],
-    "asarUnpack": ["node_modules/@imgly/background-removal-node/dist/**", "node_modules/onnxruntime-node/**", "node_modules/sharp/**", "node_modules/@img/**"],
+    "asarUnpack": [
+      "node_modules/@imgly/background-removal-node/dist/**",
+      "node_modules/onnxruntime-node/**",
+      "node_modules/sharp/**",
+      "node_modules/@img/**"
+    ],
     "win": {
       "target": "nsis",
-      "signAndEditExecutable": false
+      "signAndEditExecutable": true,
+      "icon": "src/assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true
-    }
+    },
+    "executableName": "SketchUI",
+    "artifactName": "SketchUI-Setup-${version}-${arch}.${ext}"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
     "electron": "^45.0.0",
     "electron-builder": "^26.15.3"
   },
-  "overrides": { "sharp": "0.35.5", "lodash": "4.18.1", "zod": "3.25.76" },
+  "overrides": {
+    "sharp": "0.35.5",
+    "lodash": "4.18.1",
+    "zod": "3.25.76"
+  },
   "dependencies": {
     "@imgly/background-removal-node": "^1.4.5"
-  }
+  },
+  "license": "AGPL-3.0-only",
+  "author": "Jeevan Johnson",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jeevanjohnson/Sketch-UI.git"
+  },
+  "productName": "SketchUI"
 }

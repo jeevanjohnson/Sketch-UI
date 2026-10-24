@@ -58,3 +58,67 @@ Compared the rendered wordmark, primary export button, cream side panels, nested
 Sandbox DNS blocked initial npm/runtime/build downloads; approved network execution completed them. The Electron launch also required execution outside the sandbox. An early harness expected redo to retain selection; it now explicitly selects the restored object. Electron native downloads use `will-download`, so the harness was corrected from browser download events. These were tooling issues, not silently recorded as product test passes.
 
 Visual review prompted automatic canvas fitting on window resize. Native download completion now controls the saved state so canceled/interrupted project downloads remain unsaved. The final installer is rebuilt after renderer/shell changes.
+
+## 2026-10-23 — native project saving, icon and repository preparation
+
+Implemented original editable SVG favicon with generated 256px PNG/ICO desktop assets. Electron window and Windows package configuration reference the icons; the preview server allows the SVG. Visually inspected icon and updated desktop toolbar screenshot.
+
+Save (Ctrl+S) updates the current destination. First Save and Save As (Ctrl+Shift+S) create Documents/Sketchroom/<sanitized project name>/ and open a native save dialog there; another destination may be selected. Cancel may leave an empty default folder. Windows reserved device names are prefixed. Open validates content before adopting the selected path. New resets the active path. Temporary sibling-file write then rename protects the previous destination from write failure. Changes during a pending save remain dirty because only the captured snapshot is marked saved. Browser preview retains downloads; browser download completion is not confirmed.
+
+Verified:
+- `npm run check`: passed.
+- `npm test`: 12/12 passed.
+- `node tools/verify-save.cjs`: passed in Electron, real disk writes with controlled native dialog responses: automatic nested folder creation, same-file overwrite, shortcut Save/Save As, canceled Save As retains dirty state, Save As preserves original, native Open followed by Save, failed write retains dirty state and current target, New saves separately.
+- `node tools/verify-desktop.cjs`: passed; editor, text, selection, clipboard, undo, project round-trip and PNG export; no renderer errors.
+- `node tools/verify-images.cjs`: passed; native image clipboard, crop, color/automatic local background removal, embedded project round-trip and PNG export; no renderer errors.
+- `node tools/verify-architecture.cjs`: passed in Electron; navigation, filtering and Save trace. Screenshot visually inspected. Default Playwright Chromium was unavailable; existing Electron was reused without another browser download.
+- `git diff --check`: passed (Git reports line-ending conversion notices).
+
+Focused review covered IPC sender checks, save destination ownership, snapshot/dirty tracking, cancellation, failure recovery, New/Open lifecycle, Windows path sanitization and packaging asset inclusion. No outstanding actionable defect found in that scope. Dialog responses are automated; manual OS dialog appearance/interaction and a rebuilt installed package were not checked. ICO executable resource application remains unverified until packaging; existing win.signAndEditExecutable=false is retained. No new installer, signing, release, network service or autosave was added.
+
+Repository conventions are in docs/repository-conventions.md. Build output is configured as dist/. Source remains in its existing small layout; README comparison moved to docs/. Reference screenshots are locally retained and their removal from the Git index is staged (old Git history still contains them). No commit/push/publication occurred. License choice, dependency/license distribution review, release version/destination, signing policy and packaged smoke tests remain public-release prerequisites. Git status used a command-local safe.directory setting due to the existing ownership mismatch; global settings were untouched.
+
+Architecture explorer: architecture/index.html, a compact accessible runtime list with drill-down evidence, filter, size control and Save trace. It documents the installed desktop boundary and browser alternative; it is not a live deployment certification.
+
+## 2026-10-23 — user-selected repository layout and README
+
+Moved application runtime code, assets, tests, tools and bundled notices into src/. Root package.json now points to src/desktop/main.cjs, and scripts use src/ paths. Renderer-relative imports and desktop preload/asset/notices paths remain valid. Packaging includes only runtime files/assets/notices under src/ and outputs to releases/. Existing release, release-1.1 and release-1.2 directories were moved intact under releases/ after checking source paths were inside the workspace. No builds were deleted.
+
+Project guidance now lives in agent-references/. The offline runtime explorer lives in architecture/. Root AGENTS.md and repository-conventions.md were updated. Package manifests and Git metadata remain at root. Ignored local dependencies, research and test output remain separate. README.md now uses the requested Sketch UI title/logo/description and Purpose, How to Install, Usecases, and How to install (for devs) sections. Installed identity stays Sketchroom. The clean README is at root; README-comparison.md records marked changes against the saved pre-reorganization copy. Earlier verification entries above describe the paths at the time they were run.
+
+Checks after relocation:
+- npm run check: passed, including preload syntax.
+- npm test: 12/12 passed.
+- node src/tools/verify-save.cjs: passed native project file lifecycle.
+- node src/tools/verify-desktop.cjs: passed editor/text/clipboard/save/PNG regressions with no renderer errors.
+- node src/tools/verify-images.cjs: passed image/crop/local automatic cutout/project/export regressions with no renderer errors.
+- node src/tools/verify-architecture.cjs: passed loading from architecture/, details, filter and Save trace.
+- node src/tools/verify-preview.cjs: passed HTML, module and SVG favicon HTTP responses plus non-public file denial. Initial sandbox HTTP connection was denied (EACCES); rerunning the same check outside that restriction passed.
+- git diff --check: passed with line-ending notices.
+
+Focused review covered root entry point, runtime-relative paths, test imports, verification script launch roots, preview allowlist, packaging globs/icon/output settings, documentation links and ignored artifacts. No actionable defect remains in this relocation scope. No dependency versions changed, so package-lock.json did not need regeneration. Packaging has not been rerun; new installer behavior remains unverified. The image regression suite still uses a locally retained, untracked supplied screenshot, so a distributable test fixture is still needed before clean-clone public release validation. License, release destination and signing choices remain pending. No commit, push or publication occurred.
+
+## 2026-10-23 — SketchUI 1.3.0 release preparation
+
+The application, executable metadata/window branding, package identity and default project directory now consistently use SketchUI. App ID is local.sketchui.app. New saves use .sketchui; native Open accepts .sketchui and legacy .sketchroom, preserving the internal document/clipboard signatures. Existing Sketchroom installs/documents are retained; the new application identity can coexist with them. README now puts an agent setup prompt before manual developer instructions. Root AGPL-3.0-only LICENSE was copied from the installed upstream full license text; package metadata and bundled notices identify the public source repository and license. This license permits use/modification/commercial use/redistribution with corresponding-source requirements.
+
+Replaced the private reference screenshot in image/model verification with an original distributable plant.svg fixture. The direct local model check measured 357172 transparent and 47583 opaque pixels at 736 × 552.
+
+Final checks:
+- npm run check and npm test: passed; 12/12 unit tests.
+- Development verify-save, verify-desktop and verify-images: passed.
+- Packaged verify-save --packaged: passed; SketchUI title/app name, .sketchui Save filter, automatic folders, overwrites, Save As/cancel, legacy .sketchroom Open/Save, failed-save state/target preservation, New destination reset.
+- Packaged verify-desktop --packaged: passed editing, text, multi-selection, clipboard, undo, project round-trips and PNG exports; no renderer errors.
+- Packaged verify-images --packaged: passed native image clipboard, crop, color removal, local model/cancellation, embedded-project round-trip and PNG export using the original fixture; no renderer errors.
+- npm run dist: final NSIS Windows x64 build passed. Earlier intermediate builds were superseded after identity/filter/notices fixes; only the final artifact below is proposed.
+- verify-package: all 17 packaged runtime/license assets byte-match source. Manifest name/version/main/license/productName and dependencies match; src/tests and src/tools are excluded.
+- Windows executable ProductName/FileDescription = SketchUI; ProductVersion = 1.3.0.0. Extracted embedded icon visually inspected and matches the sketch/pencil design.
+- Authenticode: application and installer are NotSigned. Builder's signtool log lines do not imply a valid certificate signature.
+
+Installer: releases/SketchUI-Setup-1.3.0-x64.exe, 265023449 bytes.
+SHA-256: a726bbec43ad7f86cef7b23e831fe6883d9a45633dd2cef21b6dd31ccc83e2b5.
+Checksum asset: releases/SHA256SUMS.txt. Executable: releases/win-unpacked/SketchUI.exe.
+
+Focused review found and fixed a native Save filter still using the old extension; the save suite now checks this filter. A test expectation was corrected after adding a separate legacy-file copy: the legacy copy is the active target while the original remains unchanged. ASAR extraction verification uses native Windows path separators for nested paths. Manual installer install/uninstall and certificate signing were not performed. Publication is pending approval of release-proposal-1.3.0.md. Repository is already public, remote/local main base is 850da93f6b47dfc72699b90638c747ac22a8a505, no preexisting outgoing commits/tags/releases were found. No commit, push, tag or release publication has been performed.
+
+Final preview/explorer checks also passed after branding updates. The packaged Save UI screenshot was visually inspected: SketchUI wordmark and Save/Save As controls render correctly. README clean copy and marked comparison are current. Publication proposal is prepared for main / v1.3.0 with installer and SHA256SUMS assets; final approval is required by deploy workflow before further staging/commit/push/tag/release writes.

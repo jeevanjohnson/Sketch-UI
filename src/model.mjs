@@ -66,7 +66,7 @@ export function validateProject(input) {
   const fail = message => { throw new Error(message); };
   const finite = n => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 100000;
   const color = c => typeof c === 'string' && /^(#[0-9a-f]{6}|none)$/i.test(c);
-  if (!input || input.format !== 'sketchroom' || input.version !== 1) fail('Choose a Sketchroom version 1 project file.');
+  if (!input || input.format !== 'sketchroom' || input.version !== 1) fail('Choose a SketchUI version 1 project file.');
   if (typeof input.name !== 'string' || input.name.length > 300) fail('Invalid project name.');
   if (!Array.isArray(input.pages) || !input.pages.length || input.pages.length > 100) fail('Projects need between 1 and 100 pages.');
   const ids = new Set();

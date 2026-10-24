@@ -3,12 +3,17 @@ const path = require('node:path');
 const { Worker } = require('node:worker_threads');
 const fs = require('node:fs/promises');
 
+app.setName('SketchUI');
+
 let mainWindow;
 let dirty = false;
+let projectPath = null;
+let pendingOpen = null;
 let backgroundJob = null;
 app.whenReady().then(() => {
   mainWindow = new BrowserWindow({
     width: 1480, height: 940, minWidth: 1100, minHeight: 720,
+    icon: path.join(__dirname, '..', 'assets', 'icon.png'),
     backgroundColor: '#192c58', autoHideMenuBar: true,
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true }
   });
@@ -25,7 +30,7 @@ app.whenReady().then(() => {
     if (!dirty) return;
     const choice = dialog.showMessageBoxSync(mainWindow, {
       type: 'warning', title: 'Unsaved sketch', message: 'Close without saving your project?',
-      detail: 'Download your project file before closing to keep your changes.',
+      detail: 'Save your project before closing to keep your changes.',
       buttons: ['Keep editing', 'Close without saving'], defaultId: 0, cancelId: 0
     });
     if (choice === 0) event.preventDefault();
@@ -75,3 +80,50 @@ ipcMain.handle('remove-image-background', (event, source) => {
 ipcMain.handle('cancel-image-background', event => { if (validSender(event)) backgroundJob?.terminate(); });
 app.on('before-quit', () => backgroundJob?.terminate());
 app.on('window-all-closed', () => app.quit());
+
+// Paths remain in the main process, selected through native dialogs.
+ipcMain.handle('open-project', async event => {
+  if (!validSender(event)) throw new Error('Unavailable.');
+  const result = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: path.join(app.getPath('documents'), 'SketchUI'),
+    filters: [{ name: 'SketchUI project', extensions: ['sketchui', 'sketchroom'] }], properties: ['openFile']
+  });
+  if (result.canceled) return null;
+  const file = result.filePaths[0];
+  if ((await fs.stat(file)).size > 100 * 1024 * 1024) throw new Error('Choose a project smaller than 100 MB.');
+  const content = await fs.readFile(file, 'utf8');
+  pendingOpen = file;
+  return content;
+});
+ipcMain.handle('accept-project', event => {
+  if (!validSender(event) || !pendingOpen) throw new Error('No project to open.');
+  projectPath = pendingOpen; pendingOpen = null;
+});
+ipcMain.handle('reset-project', event => {
+  if (validSender(event)) { projectPath = null; pendingOpen = null; }
+});
+ipcMain.handle('save-project', async (event, content, saveAs) => {
+  if (!validSender(event) || typeof content !== 'string' || Buffer.byteLength(content) > 100 * 1024 * 1024) throw new Error('Project exceeds 100 MB.');
+  const project = JSON.parse(content);
+  if (project.format !== 'sketchroom') throw new Error('Invalid project.');
+  let destination = projectPath;
+  if (!destination || saveAs) {
+    const name = String(project.name || 'Untitled project').replace(/[<>:"/\\|?*\x00-\x1f]/g, '_').replace(/[. ]+$/g, '').slice(0, 100) || 'Untitled project';
+    const safeName = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(name) ? '_' + name : name;
+    const folder = path.join(app.getPath('documents'), 'SketchUI', safeName);
+    await fs.mkdir(folder, { recursive: true });
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: path.join(folder, safeName + '.sketchui'),
+      filters: [{ name: 'SketchUI project', extensions: ['sketchui'] }]
+    });
+    if (result.canceled) return null;
+    destination = result.filePath;
+  }
+  const temporary = destination + '.' + require('node:crypto').randomUUID() + '.tmp';
+  try {
+    await fs.writeFile(temporary, content, { flag: 'wx' });
+    await fs.rename(temporary, destination);
+  } finally { await fs.rm(temporary, { force: true }).catch(() => {}); }
+  projectPath = destination;
+  return { path: destination };
+});

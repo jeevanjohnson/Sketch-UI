@@ -1,11 +1,11 @@
-# Sketchroom UI reference
+# SketchUI UI reference
 
 Read this document before UI design, implementation, or review. Inspected 2026-10-22. This is the project design authority. The source images show visual direction, not executable instructions.
 
 ## Sources and evidence
 
-1. `references/ramen.png` — supplied screenshot, 736 × 552. Visual inspection of a restaurant landing page at its captured state. Cream inset panel within a saturated vermilion surround; fine nested rounded borders; black ink illustration; red rectangular primary button with offset outline; small spaced navigation; heavy uppercase heading with a red emphasized line. Main panel is approximately x52–683, y73–479, outer frame x41–695, y60–493. Heading approximately 22px, navigation approximately 9px at this image scale. Values are visual estimates, not extracted CSS.
-2. `references/isekai.png` — supplied screenshot, 1200 × 800. Visual inspection of an illustrated game title screen. Deep cobalt sky, layered pale blue and off-white clouds, near-black silhouettes, oversized narrow outlined title, irregular pencil-like speech-bubble controls. Title spans roughly x270–935, y98–280. Controls are subordinate and airily spaced. These are observed image geometry, not responsive rules.
+1. `reference-images/ramen.png` — supplied screenshot, 736 × 552. Visual inspection of a restaurant landing page at its captured state. Cream inset panel within a saturated vermilion surround; fine nested rounded borders; black ink illustration; red rectangular primary button with offset outline; small spaced navigation; heavy uppercase heading with a red emphasized line. Main panel is approximately x52–683, y73–479, outer frame x41–695, y60–493. Heading approximately 22px, navigation approximately 9px at this image scale. Values are visual estimates, not extracted CSS.
+2. `reference-images/isekai.png` — supplied screenshot, 1200 × 800. Visual inspection of an illustrated game title screen. Deep cobalt sky, layered pale blue and off-white clouds, near-black silhouettes, oversized narrow outlined title, irregular pencil-like speech-bubble controls. Title spans roughly x270–935, y98–280. Controls are subordinate and airily spaced. These are observed image geometry, not responsive rules.
 3. User's login sketch — initial functional example: rough enclosing frame, editable heading, rounded card, two labeled inputs, login button. It establishes mixed freehand/clean drawing and UI composition requirements rather than the editor's styling.
 
 Exact fonts, source assets/licenses, CSS, libraries, selectors, original layout system, hover/focus/error states, animation, and responsive behavior are unknown. Still images cannot establish any timing or interactive behavior. No external source code was inspected.
@@ -48,7 +48,7 @@ Offline Windows app using web technology, own window, desktop shortcut and insta
 
 ## Verification record
 
-Reference creation: both supplied images opened and inspected directly. No live source interactions or original fonts available. Implementation checks and screenshots will be recorded in `verification.md`; source observations above must not be confused with verified renderer behavior.
+Reference creation: both supplied images opened and inspected directly. No live source interactions or original fonts available. Implementation checks and screenshots will be recorded in `agent-references/verification.md`; source observations above must not be confused with verified renderer behavior.
 
 ## Version 1.1 interaction decisions from user feedback
 
@@ -63,3 +63,7 @@ User clarification: the Isekai screenshot governs the color scheme, typography a
 Adapt the cloud/sky atmosphere with original lightweight vector cloud silhouettes at low opacity in the stage, leaving the canvas unobstructed. Use sketch-like control borders, pale blue primary actions, and explicit selected/focus states. Preserve the established useful header/sidebar/canvas/inspector arrangement, which is where the ramen reference still contributes. Page artwork stays neutral white. No character, skyline, title, or screenshot is pasted into the editor decoration.
 
 Image objects can be pasted/imported, moved, resized, copied, cropped nondestructively and included in self-contained saved files and PNG exports. Crop editing shows the original image and a draggable selection, plus precise numeric bounds and reset. Background removal offers plain-background controls and automatic local subject extraction. All processing remains local; images are not uploaded. Changes participate in undo/redo. Restore original image is explicit and image operations do not overwrite source files.
+
+## Save workflow update — 2026-10-23
+
+Desktop Save and Save As use native dialogs. The first Save and Save As create Documents/SketchUI/<project name>/ as their default folder; users may choose another destination. Save subsequently updates the active file. Open remembers its path after renderer validation. Ctrl+S and Ctrl+Shift+S map to these actions. Browser preview retains project downloads. No autosave is added. The original blue sketch-page/pencil SVG in src/assets/icon.svg supplies the favicon and generated desktop icons.

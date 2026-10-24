@@ -1,57 +1,72 @@
-# Sketchroom
+# SketchUI
 
-## Purpose
+![SketchUI logo](src/assets/icon.svg)
 
-The best way to help AI design what you have in mind is to lay it out. Sketchroom gives you quick tools to sketch a UI during your session: draw shapes, add text and images, move things around, and export the result.
+An offline Windows app for sketching interfaces and exporting them as visual references for AI-assisted development.
 
-Give your AI the sketch, a couple of references, and some notes about how it should work. That gives it something concrete to build from and helps you get closer to the design you actually want.
+## Purpose:
 
-Ideally, this would generate the HTML and CSS too. For now, it's a quick way to get the idea out of your head and into the conversation.
+The best way to help AI design what you have in mind is to lay it out. SketchUI gives you a place to draw shapes, add text and images, and arrange interface elements before asking AI to build them.
 
-## How to install
+Share the exported sketch with a few references and notes about how it should work. That gives your AI something concrete to follow. For now, the app helps you get the idea onto the page; it does not generate HTML or CSS.
 
-Sketchroom runs locally on Windows. You'll need an internet connection for the initial setup; after that, the app works offline, including image background removal.
+## How to Install:
 
-### Give your LLM this prompt
+If you have a packaged Windows build, run `SketchUI-Setup-1.3.0-x64.exe` and follow the installer. You can then open SketchUI from its desktop shortcut.
 
-Provide the repository link or the downloaded project folder, then paste:
+You can also run `win-unpacked/SketchUI.exe` from an unpacked build. Keep the whole `win-unpacked` folder together.
+
+Release downloads: [GitHub Releases](https://github.com/jeevanjohnson/Sketch-UI/releases). To build the app yourself, follow the developer instructions below. Once installed, the app works offline, including image background removal.
+
+## Usecases:
+
+- Sketch a page or app screen before asking AI to build it.
+- Combine text, shapes, images and editable UI components into a layout.
+- Add notes and arrows to explain how an interface should work.
+- Export a PNG to share in a design conversation.
+- Save an editable `.sketchui` project and return to it later.
+
+Save (`Ctrl+S`) updates the current project file. Save As (`Ctrl+Shift+S`) creates a separate copy. New saves default to an automatically created `Documents/SketchUI/<project name>/` folder. Existing `.sketchroom` files still open. There is no autosave.
+
+## How to install (for devs):
+
+### Let your agent handle setup
+
+If you want your agent to install it for you, give it this repository link or the downloaded folder, then copy and paste this prompt:
 
 ```text
-Help me install and run Sketchroom locally on Windows using the repository link or project folder I've provided.
+Help me install and run SketchUI locally on Windows from https://github.com/jeevanjohnson/Sketch-UI or the project folder I provide.
 
-Read the project's setup instructions and package.json first. Check that Node.js 22.12 or newer and npm are installed, then open a terminal in the project folder and run:
+Read README.md, AGENTS.md and package.json first. Check that Node.js 22.12 or newer and npm are available. From the repository root, run npm ci, npx install-electron --no, and npm start.
 
+If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.0-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.
+```
+
+### Install manually
+
+If you prefer to do it manually, install Node.js 22.12 or newer on Windows, then clone or download this repository. Open a terminal in the repository root and run:
+
+```powershell
 npm ci
 npx install-electron --no
 npm start
-
-If a command fails, diagnose and fix the setup problem without changing the app's features or overwriting my project files.
-
-Once it runs, build the Windows installer with npm run dist. Tell me where the installer and standalone executable were created so I can open the app without a terminal next time.
 ```
 
-### Or install it manually
+The initial setup needs an internet connection to download dependencies and local model files.
 
-If you already have the packaged app, run `Sketchroom Setup 1.2.0.exe` to install it, or open `win-unpacked/Sketchroom.exe` directly from the release folder.
+To check the source and run the unit tests:
 
-To build it yourself:
+```powershell
+npm run check
+npm test
+```
 
-1. Install Node.js 22.12 or newer, which includes npm.
-2. Download or clone this repository and open a terminal in its folder.
-3. Run:
-
-   ```powershell
-   npm ci
-   npx install-electron --no
-   npm start
-   ```
-
-To create an installer, run:
+To build the Windows installer:
 
 ```powershell
 npm run dist
 ```
 
-You'll find the installer and `win-unpacked/Sketchroom.exe` in `release-1.2/`.
+Build output goes into `releases/`. `npm run preview` serves a local browser preview at `http://127.0.0.1:5173`; automatic image cutouts and native file saving require the desktop app.
 
-Save your work as a `.sketchroom` project file before closing or switching versions. See [the guide](GUIDE.md) for editing controls, image tools, and development details.
+The repository uses `src/` for code, `agent-references/` for project guidance, `architecture/` for the offline architecture explorer, and `releases/` for local builds. See the [user guide](agent-references/GUIDE.md), [repository conventions](agent-references/repository-conventions.md), and [verification record](agent-references/verification.md) for details. SketchUI is licensed under [AGPL-3.0](LICENSE): you may use, modify and redistribute it, including commercially, subject to its source-sharing requirements.

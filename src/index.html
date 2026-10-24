@@ -1,10 +1,11 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; connect-src 'self'">
-  <title>Sketchroom — a little room for big ideas</title>
+  <title>SketchUI — a little room for big ideas</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="theme.css">
   <script type="module" src="app.mjs"></script>
@@ -12,9 +13,9 @@
 <body>
 <div class="app-frame">
   <header class="topbar">
-    <a class="brand" href="#" aria-label="Sketchroom home"><span class="brand-mark">SK<br>RM</span><span>SKETCHROOM<small>A LITTLE ROOM FOR BIG IDEAS</small></span></a>
+    <a class="brand" href="#" aria-label="SketchUI home"><span class="brand-mark">SK<br>UI</span><span>SKETCHUI<small>A LITTLE ROOM FOR BIG IDEAS</small></span></a>
     <div class="project-heading"><input id="project-name" aria-label="Project name" maxlength="300"><span id="save-state">Unsaved project</span></div>
-    <nav aria-label="Project actions"><button id="new-project">New</button><button id="open-project">Open</button><button id="save-project">↓ Save project</button><button class="primary" id="export">Export PNG ↗</button></nav>
+    <nav aria-label="Project actions"><button id="new-project">New</button><button id="open-project">Open</button><button id="save-project" title="Save (Ctrl+S)">Save</button><button id="save-as-project" title="Save As (Ctrl+Shift+S)">Save As…</button><button class="primary" id="export">Export PNG ↗</button></nav>
   </header>
   <main class="editor">
     <aside class="library-panel">
@@ -37,7 +38,7 @@
   </main>
   <footer class="footer"><span><i></i> OFFLINE BY DESIGN</span><span>Draw it out. Pass it on. <button id="credits">Credits</button></span><span id="object-count">0 objects</span></footer>
 </div>
-<input type="file" id="file-input" accept=".sketchroom,.json" hidden>
+<input type="file" id="file-input" accept=".sketchui,.sketchroom,.json" hidden>
 <input type="file" id="image-input" accept="image/png,image/jpeg,image/webp,image/gif,image/bmp" multiple hidden>
 <dialog id="page-dialog"><form method="dialog"><span class="eyebrow">A FRESH PAGE</span><h2>Room for another idea.</h2><label>Page name<input id="new-page-name" value="Untitled screen" maxlength="300" required></label><label>Canvas preset<select id="page-preset"><option value="1200,800">Desktop · 1200 × 800</option><option value="390,844">Phone · 390 × 844</option><option value="768,1024">Tablet · 768 × 1024</option><option value="custom">Custom size</option></select></label><div class="field-pair"><label>Width<input id="new-page-width" type="number" min="100" max="8000" value="1200" required></label><label>Height<input id="new-page-height" type="number" min="100" max="8000" value="800" required></label></div><div class="dialog-actions"><button value="cancel" formnovalidate>Cancel</button><button value="create" class="primary">Create page ↗</button></div></form></dialog>
 <dialog id="export-dialog"><form method="dialog"><span class="eyebrow">READY TO PASS IT ON?</span><h2>From sketch to possibility.</h2><p>Export the current page as a PNG for your next design conversation.</p><label>Resolution<select id="export-scale"><option value="1">1× · original size</option><option value="2">2× · extra detail</option></select></label><label class="check-row"><input id="export-annotations" type="checkbox" checked> Include notes and annotation arrows</label><div class="dialog-actions"><button value="cancel">Cancel</button><button value="export" class="primary">Download PNG ↗</button></div></form></dialog>
