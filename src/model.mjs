@@ -115,10 +115,16 @@ export function starter() {
 
 export function bounds(objects) {
   if (!objects.length) return null;
-  const x = Math.min(...objects.map((o) => Math.min(o.x, o.x + o.w)));
-  const y = Math.min(...objects.map((o) => Math.min(o.y, o.y + o.h)));
-  const right = Math.max(...objects.map((o) => Math.max(o.x, o.x + o.w)));
-  const bottom = Math.max(...objects.map((o) => Math.max(o.y, o.y + o.h)));
+  let x = Infinity;
+  let y = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  for (const object of objects) {
+    x = Math.min(x, object.x, object.x + object.w);
+    y = Math.min(y, object.y, object.y + object.h);
+    right = Math.max(right, object.x, object.x + object.w);
+    bottom = Math.max(bottom, object.y, object.y + object.h);
+  }
   return { x, y, w: right - x, h: bottom - y };
 }
 
@@ -133,12 +139,100 @@ export function resizeObjects(objects, from, to) {
   }
 }
 
+// Shared import guards keep traversal separate from object-specific rules.
+/** @param {string} message @returns {never} */
+function fail(message) {
+  throw new Error(message);
+}
+
+const finite = (value) =>
+  typeof value === 'number' && Number.isFinite(value) && Math.abs(value) <= 100000;
+const color = (value) => typeof value === 'string' && /^(#[0-9a-f]{6}|none)$/i.test(value);
+
+/** @param {Record<string, unknown>} object @returns {void} */
+function validateObjectMetadata(object) {
+  if (
+    object.text !== undefined &&
+    (typeof object.text !== 'string' || object.text.length > 10000)
+  ) {
+    fail('Invalid text.');
+  }
+  if (object.name !== undefined && (typeof object.name !== 'string' || object.name.length > 300)) {
+    fail('Invalid object name.');
+  }
+  for (const flag of ['sketch', 'annotation']) {
+    if (object[flag] !== undefined && typeof object[flag] !== 'boolean') {
+      fail(`Invalid ${flag} flag.`);
+    }
+  }
+  if (object.group !== undefined && typeof object.group !== 'string') {
+    fail('Invalid group.');
+  }
+  if (object.radius !== undefined && (!finite(object.radius) || object.radius < 0)) {
+    fail('Invalid corner radius.');
+  }
+  if (
+    object.padding !== undefined &&
+    (!finite(object.padding) || object.padding < 0 || object.padding > 500)
+  ) {
+    fail('Invalid text padding.');
+  }
+  if (object.textColor !== undefined && !color(object.textColor)) {
+    fail('Invalid text color.');
+  }
+  if (object.align !== undefined && !['left', 'center', 'right'].includes(object.align)) {
+    fail('Invalid text alignment.');
+  }
+  if (
+    object.verticalAlign !== undefined &&
+    !['top', 'middle', 'bottom'].includes(object.verticalAlign)
+  ) {
+    fail('Invalid vertical alignment.');
+  }
+  if (object.autoHeight !== undefined && typeof object.autoHeight !== 'boolean') {
+    fail('Invalid text sizing.');
+  }
+  if (object.type === 'pen') {
+    const validPoint = (point) => Array.isArray(point) && point.length === 2 && point.every(finite);
+    if (
+      !Array.isArray(object.points) ||
+      object.points.length > 50000 ||
+      !object.points.every(validPoint)
+    ) {
+      fail('Invalid pen stroke.');
+    }
+  }
+}
+
+/** @param {Record<string, unknown>} object @returns {void} */
+function validateImageObject(object) {
+  const imageSource = (value) =>
+    typeof value === 'string' &&
+    value.length < 24000000 &&
+    /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(value);
+  if (
+    !imageSource(object.src) ||
+    (object.originalSrc !== undefined && !imageSource(object.originalSrc))
+  ) {
+    fail('Image data must be an embedded PNG.');
+  }
+  const validPixels = [object.pixelWidth, object.pixelHeight].every((value) => {
+    return Number.isInteger(value) && value > 0 && value <= 4096;
+  });
+  if (
+    !validPixels ||
+    object.pixelWidth * object.pixelHeight > 12000000 ||
+    object.w <= 0 ||
+    object.h <= 0
+  ) {
+    fail('Invalid image dimensions.');
+  }
+  if (object.crop !== undefined && !validCrop(object.crop)) {
+    fail('Invalid image crop.');
+  }
+}
+
 export function validateProject(input) {
-  const fail = (message) => {
-    throw new Error(message);
-  };
-  const finite = (n) => typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= 100000;
-  const color = (c) => typeof c === 'string' && /^(#[0-9a-f]{6}|none)$/i.test(c);
   if (!input || input.format !== 'sketchroom' || input.version !== 1) {
     fail('Choose a SketchUI version 1 project file.');
   }
@@ -197,87 +291,8 @@ export function validateProject(input) {
       ) {
         fail('Invalid object geometry or colors.');
       }
-      if (
-        object.text !== undefined &&
-        (typeof object.text !== 'string' || object.text.length > 10000)
-      ) {
-        fail('Invalid text.');
-      }
-      if (
-        object.name !== undefined &&
-        (typeof object.name !== 'string' || object.name.length > 300)
-      ) {
-        fail('Invalid object name.');
-      }
-      for (const flag of ['sketch', 'annotation']) {
-        if (object[flag] !== undefined && typeof object[flag] !== 'boolean') {
-          fail(`Invalid ${flag} flag.`);
-        }
-      }
-      if (object.group !== undefined && typeof object.group !== 'string') {
-        fail('Invalid group.');
-      }
-      if (object.radius !== undefined && (!finite(object.radius) || object.radius < 0)) {
-        fail('Invalid corner radius.');
-      }
-      if (
-        object.padding !== undefined &&
-        (!finite(object.padding) || object.padding < 0 || object.padding > 500)
-      ) {
-        fail('Invalid text padding.');
-      }
-      if (object.textColor !== undefined && !color(object.textColor)) {
-        fail('Invalid text color.');
-      }
-      if (object.align !== undefined && !['left', 'center', 'right'].includes(object.align)) {
-        fail('Invalid text alignment.');
-      }
-      if (
-        object.verticalAlign !== undefined &&
-        !['top', 'middle', 'bottom'].includes(object.verticalAlign)
-      ) {
-        fail('Invalid vertical alignment.');
-      }
-      if (object.autoHeight !== undefined && typeof object.autoHeight !== 'boolean') {
-        fail('Invalid text sizing.');
-      }
-      if (object.type === 'pen') {
-        const validPoint = (point) =>
-          Array.isArray(point) && point.length === 2 && point.every(finite);
-        if (
-          !Array.isArray(object.points) ||
-          object.points.length > 50000 ||
-          !object.points.every(validPoint)
-        ) {
-          fail('Invalid pen stroke.');
-        }
-      }
-      if (object.type === 'image') {
-        const imageSource = (value) =>
-          typeof value === 'string' &&
-          value.length < 24000000 &&
-          /^data:image\/png;base64,[A-Za-z0-9+/]+=*$/.test(value);
-        if (
-          !imageSource(object.src) ||
-          (object.originalSrc !== undefined && !imageSource(object.originalSrc))
-        ) {
-          fail('Image data must be an embedded PNG.');
-        }
-        const validPixels = [object.pixelWidth, object.pixelHeight].every((value) => {
-          return Number.isInteger(value) && value > 0 && value <= 4096;
-        });
-        if (
-          !validPixels ||
-          object.pixelWidth * object.pixelHeight > 12000000 ||
-          object.w <= 0 ||
-          object.h <= 0
-        ) {
-          fail('Invalid image dimensions.');
-        }
-        if (object.crop !== undefined && !validCrop(object.crop)) {
-          fail('Invalid image crop.');
-        }
-      }
+      validateObjectMetadata(object);
+      if (object.type === 'image') validateImageObject(object);
     }
   }
   return clone(input);

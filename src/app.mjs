@@ -1343,6 +1343,7 @@ async function save(saveAs = false) {
     notify('Finish the current save first.');
     return;
   }
+  endEditing();
   const snapshot = JSON.stringify(project);
   if (new Blob([snapshot]).size > 100 * 1024 * 1024) {
     notify('This project exceeds 100 MB. Remove some large images before saving.');
@@ -1479,18 +1480,18 @@ $('#export').addEventListener('click', () => $('#export-dialog').showModal());
 $('#export-dialog').addEventListener('close', async () => {
   if ($('#export-dialog').returnValue !== 'export') return;
   try {
+    // Capture metadata before decoding yields to page navigation or edits.
+    const { width, height, name, background } = page();
     const scale = Number($('#export-scale').value);
-    if (page().width * page().height * scale * scale > 64000000)
+    if (width * height * scale * scale > 64000000)
       throw new Error('This page is too large at 2×. Choose 1× or reduce its dimensions.');
     const svg = element('svg', {
       xmlns: svgNS,
-      width: page().width * scale,
-      height: page().height * scale,
-      viewBox: `0 0 ${page().width} ${page().height}`
+      width: width * scale,
+      height: height * scale,
+      viewBox: `0 0 ${width} ${height}`
     });
-    svg.append(
-      element('rect', { width: page().width, height: page().height, fill: page().background })
-    );
+    svg.append(element('rect', { width: width, height: height, fill: background }));
     svg.append(artwork($('#export-annotations').checked, true));
     const blob = new Blob([new XMLSerializer().serializeToString(svg)], {
       type: 'image/svg+xml;charset=utf-8'
@@ -1501,14 +1502,14 @@ $('#export-dialog').addEventListener('close', async () => {
       image.src = url;
       await image.decode();
       const output = document.createElement('canvas');
-      output.width = page().width * scale;
-      output.height = page().height * scale;
+      output.width = width * scale;
+      output.height = height * scale;
       const context = output.getContext('2d');
       if (!context) throw new Error('Image rendering is unavailable.');
       context.drawImage(image, 0, 0);
       const png = await new Promise((resolve) => output.toBlob(resolve, 'image/png'));
       if (!png) throw new Error('The image could not be created. Try a smaller page.');
-      download(png, `${filename(page().name)}.png`);
+      download(png, `${filename(name)}.png`);
       if (!window.desktop)
         notify('PNG download requested. Ready for your next design conversation.');
     } finally {

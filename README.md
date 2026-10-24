@@ -12,7 +12,7 @@ Share the exported sketch with a few references and notes about how it should wo
 
 ## How to Install:
 
-If you have a packaged Windows build, run `SketchUI-Setup-1.3.1-x64.exe` and follow the installer. You can then open SketchUI from its desktop shortcut.
+If you have a packaged Windows build, run `SketchUI-Setup-1.3.2-x64.exe` and follow the installer. You can then open SketchUI from its desktop shortcut.
 
 You can also run `win-unpacked/SketchUI.exe` from an unpacked build. Keep the whole `win-unpacked` folder together.
 
@@ -39,7 +39,7 @@ Help me install and run SketchUI locally on Windows from https://github.com/jeev
 
 Read README.md, AGENTS.md and package.json first. Check that Node.js 22.12 or newer and npm are available. From the repository root, run npm ci, npx install-electron --no, and npm start.
 
-If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.1-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.
+If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.2-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.
 ```
 
 ### Install manually

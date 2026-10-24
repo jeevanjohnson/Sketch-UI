@@ -218,3 +218,45 @@ Verified assets:
 - SHA256SUMS-1.3.1.txt: 95 bytes; SHA-256 aba4e5a869b0836e825043aadd1c401b9171e5bd4af54e5c58dae3b575a97970.
 
 GitHub's connector lacks release upload operations, so the approved publication used GitHub REST with existing Git credential-manager authentication. Credentials stayed in process memory and were not logged or saved in project files. Task-specific upload state is in ignored artifacts/release-1.3.1/publication.json. Only installer/checksum assets were published; unpacked output and blockmaps remain local. The installer remains unsigned; manual install/uninstall remains unperformed. The publication-record follow-up changes documentation only; release tag and binary remain associated with ffdc345.
+
+
+## 2026-10-24 — project-wide code-quality revision
+
+Started at clean f2ac263. Inspected application coordination/actions, SVG rendering/export, model validation/history/geometry, text layout, image dialog/pixel processing, Electron main/preload/model-worker boundaries, preview/build configuration and regression tools. Applied focused changes where responsibilities, duplication or behavior justified them; preserved the offline runtime, editable version-1 format, UI design, dependency versions and repository layout.
+
+Changes:
+- model.mjs now separates optional metadata and image validation from page traversal and common geometry checks. Shared guards preserve existing format rules/messages. bounds computes extents in one pass without four intermediate arrays or spread arguments; reverse-direction and degenerate geometry tests remain valid. No measured speedup is claimed.
+- app.mjs save finishes inline editing before serializing so the saved text participates in undo. PNG export captures page dimensions/name/background before asynchronous image decoding, preserving the original page even if the user switches pages while export is running.
+- desktop/main.cjs centralizes native project byte limits and duplicated PNG source checks, imports randomUUID once, and explicitly rejects null project payloads. Paths and atomic temporary-file writes remain owned by main.
+- desktop/preload.cjs shares subscription logic and returns idempotent cleanup functions instead of leaking the ipcRenderer return value through the bridge. Unit tests assert payload forwarding, cleanup and preservation of unrelated listeners.
+- Added invalid metadata coverage and desktop regressions for focused-text Save/Undo and page navigation during deliberately paused export decoding. Existing page creation and crop assertions now wait for their asynchronous dialog close handlers before checking unchanged expectations. The first new Undo assertion also needed to reselect the object, as Undo intentionally clears selection; its expected text was preserved.
+- Reused architecture/index.html with refreshed source locators. Calls remain renderer app -> model/object renderer/image tools; desktop requests cross preload to main and the local worker. No new runtime boundary or module was introduced.
+- Ran pinned Prettier across configured paths; untouched-file warnings were caused by CRLF checkout line endings and produced no semantic Git changes. Added endOfLine=auto to respect checkout line endings on subsequent checks.
+
+Verification:
+- All src .mjs/.cjs syntax checks passed; 17/17 unit tests passed.
+- verify-desktop passed editing, text, clipboard, history, round-trip, PNG and the new Save/Undo and paused-decoder page-switch regressions, with no renderer errors.
+- verify-save passed native file lifecycle, cancellation and failed-write recovery.
+- verify-images passed clipboard, crop, plain-color and bundled local automatic cutout, cancellation, project round-trip and PNG; no renderer errors.
+- verify-preview and verify-architecture passed; architecture source locators were refreshed afterward without changing explorer behavior.
+- Isolated negative control at ignored artifacts/code-quality-export-negative-control: restored the export's live-page reads only in a copied runtime. The new regression failed at the filename assertion (Other export page.png versus Text and selection.png), confirming that it detects the original race. Production files were not mutated.
+- editor-text-features.png visually inspected; editor shell, text and controls remain usable.
+
+Environment: initial npm/Python aliases were unavailable and node_modules was absent. Used the host's bundled Node/Python and pnpm to run npm 11 ci against the unchanged package-lock.json. Native suites and package installation needed sandbox escalation. npm reported two high-severity audit entries: zod and its dependent @imgly/background-removal-node, both tracing to GHSA-mrhx-c7xc-m3w5 (oversized constrained collection memory exhaustion). Full machine-readable result: ignored artifacts/code-quality-audit.json. npm's proposed remediation downgrades the image library across a major-version boundary; no dependency changes or forced audit fixes were applied. Audit presence is verified; exploitability in this app's bundled local-model configuration has not been established. Review this dependency separately before another release.
+
+No installer rebuild, manual install/uninstall, large-project benchmark, commit, push or publication. Existing release binaries do not include this working-tree revision. This review and passing checks do not establish exhaustive correctness.
+
+
+## 2026-10-24 — SketchUI 1.3.2 release preparation
+
+Prepared patch 1.3.2 on main from clean upstream base f2ac263, including the preceding code-quality revision. Remote main matched that base and v1.3.2 was absent. Version changed in package.json and the two root package-lock fields only; dependency versions remain unchanged. Updated README installer names/comparison, release notes, repository/output records and release proposal.
+
+Release validation: all source syntax checks, 17 unit tests, full pinned formatting and whitespace checks passed. Final packaged verify-package byte-matched all 18 runtime/license assets, manifest identity and dependency declarations, excluded development files, and verified the Sharp binary's PE machine is Windows x64. Final packaged verify-save, verify-desktop and verify-images passed, including Save/Undo, delayed-export page navigation, crop, clipboard, cancellation, bundled offline cutout, project round-trip and PNG. No renderer errors. Executable ProductName/FileDescription SketchUI, ProductVersion 1.3.2.0, FileVersion 1.3.2. Manual installer install/uninstall was not tested.
+
+Preparation failures and resolution: direct electron-builder invocation could not collect dependencies without npm on PATH; npm run dist via the available bundled npm resolved that. This host is ARM64; the first completed installer included only Sharp's ARM64 optional native binary, and packaged automatic cutout failed with an explicit missing win32-x64 runtime. That intermediate installer is superseded. Installed the existing locked x64 package from an npm pack archive after verifying its SHA-512 against the lockfile. An attempted npm install --no-save updated installed build tools; discarded that installed tree using npm ci, restored exact locked packages, then extracted only the verified x64 native package. A scan confirmed all installed package versions match the lockfile. Both host ARM64 and target x64 Sharp binaries are supplied locally. No manifest dependency changes. Added a permanent native-binary assertion to verify-package and documented the cross-architecture workflow in src/tools/README.md.
+
+The packaged image suite also exposed a stale prior copy toast and asynchronous Apply completion in the test harness. It now observes the dialog close event and clears the old notification before issuing the next copy; pixel-size/alpha assertions are unchanged. The cutout assertion now includes its failure message. Only tests/tools/documentation changed after the final runtime package was built.
+
+The known Zod high-severity dependency advisory is disclosed in release notes; no forced dependency downgrade is included. Build/signature/hash completion and the exact publication payload are recorded in release-proposal-1.3.2.md. Project instructions retain a concrete-proposal confirmation step before creating/pushing the tag and publishing assets. The user separately requested source push; source commit/push proceeds after final artifact verification. Publication remains pending that confirmation.
+
+Final Windows x64 NSIS build passed. Installer SketchUI-Setup-1.3.2-x64.exe: 270514711 bytes, SHA-256 0bf2c3c4f707db24ab7e584e336e471b169a9ef45d7d8060eb75e9d65e7fc327. Checksum file SHA256SUMS-1.3.2.txt generated. Application and installer are both NotSigned. Final package/source comparison passed again after build completion. Only this final rebuilt artifact is proposed; intermediate output was superseded.

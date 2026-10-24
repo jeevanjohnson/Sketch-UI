@@ -34,8 +34,26 @@ assert.ok(
   !asar.listPackage(archive).some((file) => /^[/\\]src[/\\](tests|tools)[/\\]/.test(file)),
   'Development files must be excluded'
 );
+// A cross-architecture build can otherwise package only the host's Sharp binary.
+const sharpVersion = source.overrides.sharp;
+const sharpBinary = path.join(
+  root,
+  'releases',
+  'win-unpacked',
+  'resources',
+  'app.asar.unpacked',
+  'node_modules',
+  '@img',
+  'sharp-win32-x64',
+  'lib',
+  `sharp-win32-x64-${sharpVersion}.node`
+);
+const nativeBytes = fs.readFileSync(sharpBinary);
+const peOffset = nativeBytes.readUInt32LE(0x3c);
+assert.equal(nativeBytes.toString('ascii', peOffset, peOffset + 4), 'PE\0\0');
+assert.equal(nativeBytes.readUInt16LE(peOffset + 4), 0x8664, 'Sharp must target Windows x64');
 console.log(
   'Packaged source matches all ' +
     runtime.length +
-    ' runtime/license assets; identity and dependencies match; development files excluded.'
+    ' runtime/license assets; identity and dependencies match; x64 Sharp binary verified; development files excluded.'
 );

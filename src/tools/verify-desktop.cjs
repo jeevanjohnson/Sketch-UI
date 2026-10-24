@@ -27,7 +27,7 @@ const path = require('node:path');
               item.setSavePath(destination);
               item.once('done', (event, state) => {
                 clearTimeout(timer);
-                resolve({ state, path: item.getSavePath() });
+                resolve({ state, path: item.getSavePath(), filename: item.getFilename() });
               });
             }
           );
@@ -86,6 +86,7 @@ const path = require('node:path');
     await page.locator('#new-page-name').fill('Phone test');
     await page.locator('#page-preset').selectOption('390,844');
     await page.getByRole('button', { name: 'Create page' }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.page-item').length === 2);
     assert.equal(await page.locator('.page-item').count(), 2);
     await page.locator('[data-component="button"]').click();
     await page.locator('[data-prop="x"]').fill('130');
@@ -128,6 +129,7 @@ const path = require('node:path');
     await page.waitForFunction(() =>
       document.querySelector('#save-state').textContent.startsWith('✓')
     );
+    await page.waitForFunction(() => document.querySelectorAll('.page-item').length === 2);
     assert.equal(await page.locator('.page-item').count(), 2);
     await page.locator('#file-input').setInputFiles({
       name: 'invalid.sketchui',
@@ -289,6 +291,57 @@ const path = require('node:path');
       document.querySelector('#save-state').textContent.startsWith('✓')
     );
     await page.screenshot({ path: path.join(artifacts, 'editor-text-features.png') });
+    // Programmatic Save keeps textarea focus: the save boundary must commit the edit.
+    await page.locator(`[data-id="${rectangle.id}"]`).dblclick();
+    await page.locator('#inline-text-editor').fill('Saved inline edit');
+    await page.evaluate(() => document.querySelector('#save-project').click());
+    await page.waitForFunction(() =>
+      document.querySelector('#save-state').textContent.startsWith('✓')
+    );
+    assert.equal(
+      JSON.parse(await fs.readFile(featureFile, 'utf8')).pages[0].objects.find(
+        (o) => o.id === rectangle.id
+      ).text,
+      'Saved inline edit'
+    );
+    assert.equal(await page.locator('#inline-text-editor').count(), 0);
+    await page.locator('#undo').click();
+    await page.locator(`[data-layer="${rectangle.id}"]`).click();
+    assert.equal(await page.locator('#object-text').inputValue(), 'Text inside a rectangle');
+
+    // Hold image decoding while switching to a differently sized page.
+    await page.locator('#add-page').click();
+    await page.locator('#new-page-name').fill('Other export page');
+    await page.locator('#page-preset').selectOption('390,844');
+    await page.getByRole('button', { name: 'Create page' }).click();
+    await page.waitForFunction(() => document.querySelectorAll('.page-item').length === 2);
+    await page.locator('.page-item').first().click();
+    await page.evaluate(() => {
+      const decode = Image.prototype.decode;
+      Image.prototype.decode = async function () {
+        Image.prototype.decode = decode;
+        await new Promise((resolve) => {
+          window.releaseExportDecode = resolve;
+        });
+        return decode.call(this);
+      };
+    });
+    const stableExport = path.join(artifacts, 'export-page-switch.png');
+    await prepareDownload(stableExport);
+    await page.locator('#export').click();
+    await page.getByRole('button', { name: 'Download PNG' }).click();
+    await page.waitForFunction(() => typeof window.releaseExportDecode === 'function');
+    await page.locator('.page-item').last().click();
+    await page.evaluate(() => {
+      window.releaseExportDecode();
+      delete window.releaseExportDecode;
+    });
+    const stableDownload = await app.evaluate(() => globalThis.downloadResult);
+    assert.equal(stableDownload.state, 'completed');
+    assert.equal(stableDownload.filename, 'Text and selection.png');
+    const stableBytes = await fs.readFile(stableExport);
+    assert.equal(stableBytes.readUInt32BE(16), 1000);
+    assert.equal(stableBytes.readUInt32BE(20), 700);
     await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(1100, 720));
     await page.waitForTimeout(100);
     await page.screenshot({ path: path.join(artifacts, 'editor-minimum.png') });

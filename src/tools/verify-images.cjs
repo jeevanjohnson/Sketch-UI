@@ -31,6 +31,20 @@ const sharp = require('sharp');
   try {
     const page = await app.firstWindow();
     page.setDefaultTimeout(15000);
+    const applyImageEdits = async () => {
+      await page.evaluate(() => {
+        window.imageEditsApplied = false;
+        document.querySelector('#image-dialog').addEventListener(
+          'close',
+          () => {
+            window.imageEditsApplied = true;
+          },
+          { once: true }
+        );
+      });
+      await page.locator('#apply-image').click();
+      await page.waitForFunction(() => window.imageEditsApplied);
+    };
     const errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.waitForSelector('[data-id]');
@@ -92,7 +106,8 @@ const sharp = require('sharp');
     await page.locator('[data-crop="w"]').press('Tab');
     await page.locator('[data-crop="x"]').fill('25');
     await page.locator('[data-crop="x"]').press('Tab');
-    await page.locator('#apply-image').click();
+    await applyImageEdits();
+    await page.waitForFunction(() => document.querySelector('[data-prop="w"]')?.value === '100');
     assert.equal(await page.locator('[data-prop="w"]').inputValue(), '100');
     await page.locator('#undo').click();
     await page.locator('#layers .layer').first().click();
@@ -109,7 +124,11 @@ const sharp = require('sharp');
       document.querySelector('#image-status').textContent.startsWith('Preview ready')
     );
     await page.screenshot({ path: path.join(artifacts, 'image-color-preview.png') });
-    await page.locator('#apply-image').click();
+    await applyImageEdits();
+    // A previous copy toast must not satisfy the new asynchronous copy wait.
+    await page.evaluate(() => {
+      document.querySelector('#toast').textContent = '';
+    });
     await page.locator('[data-action="copy-image"]').click();
     await page.waitForFunction(() =>
       document.querySelector('#toast').textContent.startsWith('Image copied')
@@ -157,9 +176,10 @@ const sharp = require('sharp');
       null,
       { timeout: 90000 }
     );
-    assert.ok((await page.locator('#image-status').textContent()).startsWith('Local cutout ready'));
+    const cutoutStatus = await page.locator('#image-status').textContent();
+    assert.ok(cutoutStatus.startsWith('Local cutout ready'), cutoutStatus);
     await page.screenshot({ path: path.join(artifacts, 'image-ai-preview.png') });
-    await page.locator('#apply-image').click();
+    await applyImageEdits();
     const prepareDownload = async (destination) => {
       await app.evaluate(({ BrowserWindow }, output) => {
         globalThis.imageDownload = new Promise((resolve) =>

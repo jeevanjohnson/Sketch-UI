@@ -104,7 +104,7 @@
         artifact:
           'src/index.html, src/app.mjs, src/object-renderer.mjs, src/text-layout.mjs, src/model.mjs, src/image-editor.mjs, src/styles.css, src/theme.css',
         evidence:
-          'src/app.mjs:1341 — save(saveAs); :1375 — openProject; :53 — dirty snapshot comparison; :87 — artwork calls object-renderer.mjs. Renderer helpers consume objects and shared text-layout measurements to produce both live SVG and export artwork.',
+          'src/app.mjs:1341 — save(saveAs); :1376 — openProject; :53 — dirty snapshot comparison; :87 — artwork calls object-renderer.mjs. Renderer helpers consume objects and shared text-layout measurements to produce both live SVG and export artwork.',
         communication:
           'Calls the isolated preload bridge for desktop file operations. Browser preview uses a downloadable JSON file.',
         save: true
@@ -114,7 +114,7 @@
         job: 'Expose a small set of desktop operations to the editor.',
         artifact: 'src/desktop/preload.cjs (loaded into the window by Electron)',
         evidence:
-          'src/desktop/preload.cjs:5 onward — saveProject, openProject, acceptProject, resetProject and dirty state. src/desktop/main.cjs:34 — context isolation, sandbox and disabled renderer Node integration.',
+          'src/desktop/preload.cjs:17 onward — saveProject, openProject, acceptProject, resetProject and dirty state. src/desktop/main.cjs:49 — context isolation, sandbox and disabled renderer Node integration.',
         communication:
           'Renderer → ipcRenderer.invoke → ipcMain.handle; results return as promises. This is a boundary between page code and privileged desktop operations.',
         save: true
@@ -124,7 +124,7 @@
         job: 'Own the app window, native file dialogs and local file writes.',
         artifact: 'src/desktop/main.cjs',
         evidence:
-          'src/desktop/main.cjs:157 — open-project; :172 — accept-project; :183 — save-project. File paths remain here rather than being accepted from page code.',
+          'src/desktop/main.cjs:158 — open-project; :173 — accept-project; :184 — save-project. File paths remain here rather than being accepted from page code.',
         communication:
           'Receives trusted-window IPC. Creates Documents/SketchUI/project-name by default. Writes a temporary sibling then renames it over the destination. Opens the background worker when requested.',
         save: true
@@ -135,7 +135,7 @@
         artifact:
           'src/desktop/background-worker.cjs; @imgly/background-removal-node and native runtime dependencies',
         evidence:
-          'src/desktop/main.cjs:123 — Worker construction; src/desktop/background-worker.cjs:7 onward — local model path, image processing and progress messages.',
+          'src/desktop/main.cjs:124 — Worker construction; src/desktop/background-worker.cjs:7 onward — local model path, image processing and progress messages.',
         communication:
           'Main process → worker data; worker → progress/result messages → main → renderer. A worker thread is contained in the desktop process, not a remote service.',
         save: false
@@ -146,7 +146,7 @@
         artifact:
           '.sketchui JSON (legacy .sketchroom supported) on your disk, separate from application installation',
         evidence:
-          'src/desktop/main.cjs:183 onward — native Save/Save As, selected destination and temporary-file replacement. package.json build.files contains application assets, not user project files.',
+          'src/desktop/main.cjs:184 onward — native Save/Save As, selected destination and temporary-file replacement. package.json build.files contains application assets, not user project files.',
         communication:
           'Main process reads/writes files. No autosave or sync is configured. Save As keeps the previous file and selects a new current destination.',
         save: true

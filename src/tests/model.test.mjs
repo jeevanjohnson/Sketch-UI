@@ -101,3 +101,21 @@ test('history releases expired images while preserving all retained undo states'
   assert.deepEqual(restored, { src: 'data:image/png;base64,BBBB', revision: 2 });
   assert.equal(history.undo(), undefined);
 });
+
+// These expectations come from the version-1 format limits, not current output.
+test('optional object metadata enforces format limits after validation refactoring', () => {
+  for (const [key, value, message] of [
+    ['group', 42, /group/],
+    ['radius', -1, /radius/],
+    ['padding', 501, /padding/],
+    ['text', 'x'.repeat(10001), /text/],
+    ['textColor', 'red', /color/],
+    ['align', 'justify', /alignment/],
+    ['verticalAlign', 'baseline', /alignment/],
+    ['autoHeight', 'false', /sizing/]
+  ]) {
+    const project = starter();
+    project.pages[0].objects[0][key] = value;
+    assert.throws(() => validateProject(project), message, key);
+  }
+});

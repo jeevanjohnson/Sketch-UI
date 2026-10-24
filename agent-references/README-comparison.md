@@ -30,9 +30,9 @@ Share the exported sketch with a few references and notes about how it should wo
 
 
 
-**If you have a packaged Windows build, run \`SketchUI-Setup-1.3.1-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.**
+**If you have a packaged Windows build, run \`SketchUI-Setup-1.3.2-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.**
 
-~~If you have a packaged Windows build, run \`SketchUI-Setup-1.3.0-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.~~
+~~If you have a packaged Windows build, run \`SketchUI-Setup-1.3.1-x64.exe\` and follow the installer. You can then open SketchUI from its desktop shortcut.~~
 
 
 
@@ -86,9 +86,9 @@ Read README.md, AGENTS.md and package.json first. Check that Node.js 22.12 or ne
 
 
 
-**If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.1-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.**
+**If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.2-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.**
 
-~~If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.0-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.~~
+~~If setup fails, diagnose the error without changing app features or overwriting my projects. Once the app runs, build the Windows installer with npm run dist. Tell me where releases/SketchUI-Setup-1.3.1-x64.exe and releases/win-unpacked/SketchUI.exe were created and how to open the app. Do not commit, push or publish anything.~~
 
 \`\`\`
 

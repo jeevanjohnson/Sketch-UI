@@ -13,6 +13,19 @@ const {
 const path = require('node:path');
 const { Worker } = require('node:worker_threads');
 const fs = require('node:fs/promises');
+const { randomUUID } = require('node:crypto');
+
+const MAX_PROJECT_BYTES = 100 * 1024 * 1024;
+const MAX_IMAGE_SOURCE_LENGTH = 32000000;
+
+/** @param {unknown} source @returns {boolean} */
+function isPngSource(source) {
+  return (
+    typeof source === 'string' &&
+    source.length <= MAX_IMAGE_SOURCE_LENGTH &&
+    source.startsWith('data:image/png;base64,')
+  );
+}
 
 app.setName('SketchUI');
 
@@ -86,13 +99,7 @@ ipcMain.handle('read-credits', async (event) => {
 });
 
 ipcMain.handle('copy-image', async (event, source, text) => {
-  if (
-    !validSender(event) ||
-    typeof source !== 'string' ||
-    source.length > 32000000 ||
-    !source.startsWith('data:image/png;base64,')
-  )
-    throw new Error('Invalid image.');
+  if (!validSender(event) || !isPngSource(source)) throw new Error('Invalid image.');
   const image = nativeImage.createFromDataURL(source);
   if (image.isEmpty()) throw new Error('The image is empty.');
   const payload = { 'image/png': new Blob([image.toPNG()], { type: 'image/png' }) };
@@ -103,13 +110,7 @@ ipcMain.handle('copy-image', async (event, source, text) => {
 });
 
 ipcMain.handle('remove-image-background', (event, source) => {
-  if (
-    !validSender(event) ||
-    typeof source !== 'string' ||
-    source.length > 32000000 ||
-    !source.startsWith('data:image/png;base64,')
-  )
-    throw new Error('Invalid image.');
+  if (!validSender(event) || !isPngSource(source)) throw new Error('Invalid image.');
   if (backgroundJob) throw new Error('Another cutout is already running.');
   const dimensions = nativeImage.createFromDataURL(source).getSize();
   if (
@@ -163,7 +164,7 @@ ipcMain.handle('open-project', async (event) => {
   });
   if (result.canceled) return null;
   const file = result.filePaths[0];
-  if ((await fs.stat(file)).size > 100 * 1024 * 1024)
+  if ((await fs.stat(file)).size > MAX_PROJECT_BYTES)
     throw new Error('Choose a project smaller than 100 MB.');
   const content = await fs.readFile(file, 'utf8');
   pendingOpen = file;
@@ -184,11 +185,11 @@ ipcMain.handle('save-project', async (event, content, saveAs) => {
   if (
     !validSender(event) ||
     typeof content !== 'string' ||
-    Buffer.byteLength(content) > 100 * 1024 * 1024
+    Buffer.byteLength(content) > MAX_PROJECT_BYTES
   )
     throw new Error('Project exceeds 100 MB.');
   const project = JSON.parse(content);
-  if (project.format !== 'sketchroom') throw new Error('Invalid project.');
+  if (!project || project.format !== 'sketchroom') throw new Error('Invalid project.');
   let destination = projectPath;
   if (!destination || saveAs) {
     const name =
@@ -206,7 +207,7 @@ ipcMain.handle('save-project', async (event, content, saveAs) => {
     if (result.canceled) return null;
     destination = result.filePath;
   }
-  const temporary = destination + '.' + require('node:crypto').randomUUID() + '.tmp';
+  const temporary = destination + '.' + randomUUID() + '.tmp';
   try {
     await fs.writeFile(temporary, content, { flag: 'wx' });
     await fs.rename(temporary, destination);

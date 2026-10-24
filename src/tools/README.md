@@ -16,3 +16,9 @@
 `npm run format` formats runtime source, tests, tools, CSS/HTML, the architecture page and package.json. `npm run format:check` checks the same paths without writing. Both use temporary, pinned Prettier 3.6.2 through npm exec; first use may require npm registry access, later runs can use its cache. No application or development dependency is added to the lockfile. Settings live in package.json: 100-column target, single quotes and no trailing commas.
 
 After formatting, manually inspect logical grouping and function placement. Prettier cannot decide responsibility boundaries or replace nested conditions with clear control flow. Embedded HTML templates are marked with HTML comments so their markup is formatted too; fixed SVG path literals remain intact. Full-source formatting and desktop/save/image/preview/explorer regressions passed on 2026-10-24.
+
+## Building Windows x64 on an ARM64 host
+
+The release target is x64 even when the build host's Node runtime is ARM64. npm ci installs the host's optional native dependencies; also supply the exact locked @img/sharp-win32-x64 package before building. Keep the ARM64 package for development checks on the host.
+
+Use npm pack @img/sharp-win32-x64@<locked version> --pack-destination artifacts/native-packages, verify the archive against package-lock.json's integrity, then extract its package contents into node_modules/@img/sharp-win32-x64. This adds only an existing locked optional dependency. Avoid npm install --no-save for this operation: it can still update installed build tools within manifest ranges even with package-lock=false. Run npm run dist with npm on PATH so electron-builder can collect production dependencies. verify-package checks that the unpacked Sharp binary is a Windows x64 PE file; verify-images --packaged remains required to exercise the native runtime.

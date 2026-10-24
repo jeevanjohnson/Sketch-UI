@@ -1,6 +1,6 @@
 {
   "name": "sketchui",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "private": true,
   "description": "An offline sketchbook for interface ideas",
   "main": "src/desktop/main.cjs",
@@ -71,6 +71,7 @@
   "prettier": {
     "printWidth": 100,
     "singleQuote": true,
-    "trailingComma": "none"
+    "trailingComma": "none",
+    "endOfLine": "auto"
   }
 }
