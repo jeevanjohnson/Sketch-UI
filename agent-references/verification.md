@@ -122,3 +122,14 @@ Checksum asset: releases/SHA256SUMS.txt. Executable: releases/win-unpacked/Sketc
 Focused review found and fixed a native Save filter still using the old extension; the save suite now checks this filter. A test expectation was corrected after adding a separate legacy-file copy: the legacy copy is the active target while the original remains unchanged. ASAR extraction verification uses native Windows path separators for nested paths. Manual installer install/uninstall and certificate signing were not performed. Publication is pending approval of release-proposal-1.3.0.md. Repository is already public, remote/local main base is 850da93f6b47dfc72699b90638c747ac22a8a505, no preexisting outgoing commits/tags/releases were found. No commit, push, tag or release publication has been performed.
 
 Final preview/explorer checks also passed after branding updates. The packaged Save UI screenshot was visually inspected: SketchUI wordmark and Save/Save As controls render correctly. README clean copy and marked comparison are current. Publication proposal is prepared for main / v1.3.0 with installer and SHA256SUMS assets; final approval is required by deploy workflow before further staging/commit/push/tag/release writes.
+
+
+## SketchUI 1.3.0 — publication completed
+
+The user approved the exact release proposal. Source commit b74981cc65ce79adf7d5d2709c68aa2b523d84a0 was committed and pushed to origin/main, then annotated tag v1.3.0 was created and pushed at that commit. The packaged runtime/license asset comparison passed again against this unchanged source.
+
+Published latest, non-prerelease release: https://github.com/jeevanjohnson/Sketch-UI/releases/tag/v1.3.0
+
+GitHub API verified both assets have state uploaded, expected byte lengths and matching SHA-256 digests. Installer SketchUI-Setup-1.3.0-x64.exe: 265023449 bytes, a726bbec43ad7f86cef7b23e831fe6883d9a45633dd2cef21b6dd31ccc83e2b5. SHA256SUMS.txt: 95 bytes, f27fe1f58e04b44cfbb9d4f8f432d87c9eb3d2e19db04473ffde1259ecdc739d. Remote main and the dereferenced annotated tag were verified at the release commit after publication.
+
+The release was created as a draft, its assets were uploaded and verified, and only then was it published as latest. The GitHub connector lacked release upload operations, so publication used standard Git credential-manager authentication with GitHub REST; no credential values were logged or stored in project files. The installer remains unsigned. Manual install/uninstall remains unperformed. This completion record is a documentation-only follow-up; release tag and installer still correspond to the exact source commit above.

@@ -1,6 +1,6 @@
 # Publication proposal — SketchUI 1.3.0
 
-Status: locally built and verified; not committed, tagged, pushed or published.
+Status: approved by the user and published. Release: https://github.com/jeevanjohnson/Sketch-UI/releases/tag/v1.3.0. Source commit: b74981cc65ce79adf7d5d2709c68aa2b523d84a0; tag: v1.3.0. The proposal below is retained as the approved publication record.
 
 ## Destination and source
 

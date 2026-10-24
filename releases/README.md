@@ -2,4 +2,4 @@
 
 SketchUI 1.3.0 Windows x64 installer: SketchUI-Setup-1.3.0-x64.exe. Build with npm run dist from the repository root. The unpacked executable is win-unpacked/SketchUI.exe; keep that directory together. Generated binaries, blockmaps and checksums are ignored by Git.
 
-The local installer and packaged application have been built and checked; public publication awaits approval of ../agent-references/release-proposal-1.3.0.md. See ../agent-references/verification.md for actual checks. Historical local builds remain in release/, release-1.1/ and release-1.2/.
+The installer and packaged application have been built and checked. SketchUI 1.3.0 is published at https://github.com/jeevanjohnson/Sketch-UI/releases/tag/v1.3.0. The approved publication record is ../agent-references/release-proposal-1.3.0.md. See ../agent-references/verification.md for actual checks. Historical local builds remain in release/, release-1.1/ and release-1.2/.
